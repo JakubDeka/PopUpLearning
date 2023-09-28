@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 
 
-project_directory = Path("D:/PythonProjects/frenchPopUp")
+project_directory = Path("/")
 french_database = project_directory / "french_words.db"
 connection = sqlite3.connect(french_database)
 cursor = connection.cursor()

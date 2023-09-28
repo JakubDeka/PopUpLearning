@@ -1,15 +1,14 @@
 from tkinter import *
-import time
 from tkinter import messagebox
-import sqlite3
-import random
+from ttkwidgets.autocomplete import AutocompleteEntry
 from auxiliary import *
-from pathlib import Path
+import time
+import random
 
-project_directory = Path("D:/PythonProjects/frenchPopUp")
-french_database = project_directory / "french_words.db"
-image = project_directory / "images/french_flag.png"
-app_settings = project_directory / "settings.txt"
+
+projectDirectory, frenchDatabase = loadDirectories()
+image = projectDirectory / "images/french_flag.png"
+appSettings = projectDirectory / "settings.txt"
 
 
 def startCountdown():
@@ -42,7 +41,7 @@ def stopCountdown():
 
 
 def readSettingsFromFile():
-    with open(app_settings, "r") as file:
+    with open(appSettings, "r") as file:
         data = file.readlines()
     i = 0
     for line in data:
@@ -55,24 +54,24 @@ def readSettingsFromFile():
 
 
 def SaveTime(window):
-    with open(app_settings, "r") as file:
+    with open(appSettings, "r") as file:
         data = file.readlines()
-    data[0] = 'hours = '
+    data[1] = 'hours = '
     if len(newHours.get()) == 0:
-        data[0] += '0\n'
-    else:
-        data[0] += f'{newHours.get()}\n'
-    data[1] = 'minutes = '
-    if len(newMinutes.get()) == 0:
         data[1] += '0\n'
     else:
-        data[1] += f'{newMinutes.get()}\n'
-    data[2] = 'seconds = '
-    if len(newSeconds.get()) == 0:
+        data[1] += f'{newHours.get()}\n'
+    data[2] = 'minutes = '
+    if len(newMinutes.get()) == 0:
         data[2] += '0\n'
     else:
-        data[2] += f'{newSeconds.get()}\n'
-    with open(app_settings, 'w') as file:
+        data[2] += f'{newMinutes.get()}\n'
+    data[3] = 'seconds = '
+    if len(newSeconds.get()) == 0:
+        data[3] += '0\n'
+    else:
+        data[3] += f'{newSeconds.get()}\n'
+    with open(appSettings, 'w') as file:
         file.writelines(data)
     readSettingsFromFile()
     window.destroy()
@@ -102,18 +101,18 @@ def openTimeSettings():
     changeMainMenuState('disabled')
     top = Toplevel(master)
     top.geometry("350x150")
-    top.title("Time settings")
-    Label(top, text='Set time between quizzes', font=("Arial", 18)).pack()
-    Label(top, text=f'hours', width=6, anchor="w").place(x=99, y=timeLabel_y)
-    Label(top, text=f'minutes', width=6, anchor="w").place(x=167, y=timeLabel_y)
-    Label(top, text=f'seconds', width=6, anchor="w").place(x=250, y=timeLabel_y)
+    top.title(timeWindowTitle.get())
+    Label(top, textvariable=mainMenuLabelText, font=("Arial", 18)).pack()
+    Label(top, textvariable=hoursLabelText, width=6, anchor="w").place(x=89, y=timeLabel_y)
+    Label(top, textvariable=minutesLabelText, width=6, anchor="w").place(x=167, y=timeLabel_y)
+    Label(top, textvariable=secondsLabelText, width=6, anchor="w").place(x=250, y=timeLabel_y)
     newHours.set("{:0>0d}".format(int(hours.get())))
     newMinutes.set("{:0>0d}".format(int(minutes.get())))
     newSeconds.set("{:0>0d}".format(int(seconds.get())))
-    Entry(top, textvariable=newHours, width=2, font=("Arial", 18)).place(x=67, y=timeLabel_y - 5)
+    Entry(top, textvariable=newHours, width=2, font=("Arial", 18)).place(x=57, y=timeLabel_y - 5)
     Entry(top, textvariable=newMinutes, width=2, font=("Arial", 18)).place(x=134, y=timeLabel_y - 5)
     Entry(top, textvariable=newSeconds, width=2, font=("Arial", 18)).place(x=217, y=timeLabel_y - 5)
-    Button(top, text="Save new time", command=lambda: SaveTime(top)).place(x=130, y=timeLabel_y + 45)
+    Button(top, textvariable=saveNewTimeButtonText, command=lambda: SaveTime(top)).place(x=130, y=timeLabel_y + 45)
 
     def on_closing():
         changeMainMenuState('active')
@@ -127,19 +126,19 @@ def saveWordsSettings(window):
     if len(results) == 0:
         messagebox.showwarning('no available words', 'you fucked up mate!')
     else:
-        with open(app_settings, "r") as file:
+        with open(appSettings, "r") as file:
             data = file.readlines()
-        data[3] = f'category = {newCategory.get()}\n'
-        data[4] = f'difficulty = {newDifficulty.get()}\n'
-        data[5] = f'strict_tags = {newStrictTags.get()}\n'
+        data[4] = f'category = {newCategory.get()}\n'
+        data[5] = f'difficulty = {newDifficulty.get()}\n'
+        data[6] = f'strict_tags = {newStrictTags.get()}\n'
         tags_number = len(newTagsList)
         for i in range(tags_number):
             if i < tags_number - 1:
                 addition = '\n'
             else:
                 addition = ''
-            data[6 + i] = f'tag{i + 1} = {newTagsList[i].get()}{addition}'
-        with open(app_settings, 'w') as file:
+            data[7 + i] = f'tag{i + 1} = {newTagsList[i].get()}{addition}'
+        with open(appSettings, 'w') as file:
             file.writelines(data)
         readSettingsFromFile()
         window.destroy()
@@ -155,8 +154,8 @@ def prepareNewSettingsVariables():
 
 
 def resetNewSettingsVariables():
-    newCategory.set('all')
-    newDifficulty.set('-')
+    newCategory.set(properCategoryList[0])
+    newDifficulty.set(properDifficultiesList[0])
     for new_tag in newTagsList:
         new_tag.set('')
     newStrictTags.set(0)
@@ -169,22 +168,23 @@ def openWordsSettings():
     top = Toplevel(master)
     top.geometry("470x200")
     top.title("Words settings")
-    Label(top, text='Set available word constraints', font=("Arial", 18)).pack()
-    Label(top, text="Word category").place(x=zero_x, y=55)
-    Label(top, text="Tags:").place(x=zero_x, y=85)
-    Label(top, text="Word difficulty").place(x=zero_x + 225, y=55)
-    OptionMenu(top, newCategory, *categoryList).place(x=125, y=50)
-    Entry(top, width=18, textvariable=newTag1).place(x=50, y=85)
-    Entry(top, width=18, textvariable=newTag2).place(x=175, y=85)
-    Entry(top, width=18, textvariable=newTag3).place(x=300, y=85)
-    Entry(top, width=18, textvariable=newTag4).place(x=50, y=110)
-    Entry(top, width=18, textvariable=newTag5).place(x=175, y=110)
-    Entry(top, width=18, textvariable=newTag6).place(x=300, y=110)
-    OptionMenu(top, newDifficulty, *difficulties).place(x=125 + 200, y=50)
-    Button(top, text="Reset settings", command=resetNewSettingsVariables, width=10).place(x=350, y=timeLabel_y + 100)
-    Button(top, text="Save new settings", command=lambda: saveWordsSettings(top), width=14).place(x=177,
-                                                                                                  y=timeLabel_y + 100)
-    Checkbutton(top, text='Strict tags', variable=newStrictTags).place(x=zero_x, y=135)
+    Label(top, textvariable=setWordsConstraintsLabelText, font=("Arial", 18)).pack()
+    Label(top, textvariable=wordCategoryLabelText).place(x=zero_x, y=55)
+    Label(top, textvariable=tagsLabelText).place(x=zero_x, y=85)
+    Label(top, textvariable=wordDifficultyLabelText).place(x=zero_x + 225, y=55)
+    OptionMenu(top, newCategory, *properCategoryList).place(x=125, y=50)
+    AutocompleteEntry(top, width=18, textvariable=newTag1, completevalues=availableLabels).place(x=50, y=85)
+    AutocompleteEntry(top, width=18, textvariable=newTag2, completevalues=availableLabels).place(x=175, y=85)
+    AutocompleteEntry(top, width=18, textvariable=newTag3, completevalues=availableLabels).place(x=300, y=85)
+    AutocompleteEntry(top, width=18, textvariable=newTag4, completevalues=availableLabels).place(x=50, y=110)
+    AutocompleteEntry(top, width=18, textvariable=newTag5, completevalues=availableLabels).place(x=175, y=110)
+    AutocompleteEntry(top, width=18, textvariable=newTag6, completevalues=availableLabels).place(x=300, y=110)
+    OptionMenu(top, newDifficulty, *properDifficultiesList).place(x=125 + 200, y=50)
+    Button(top, textvariable=resetSettingsButtonText, command=resetNewSettingsVariables, width=14)\
+        .place(x=350, y=timeLabel_y + 100)
+    Button(top, textvariable=saveSettingButtonText, command=lambda: saveWordsSettings(top), width=14)\
+        .place(x=177, y=timeLabel_y + 100)
+    Checkbutton(top, textvariable=strictTagsLabelText, variable=newStrictTags).place(x=zero_x, y=135)
 
     def on_closing():
         changeMainMenuState('active')
@@ -196,10 +196,10 @@ def openWordsSettings():
 def showMainMenu():
     # labels
     mainMenuTimeLabel.pack()
-    hoursLabel.place(x=99, y=timeLabel_y)
+    hoursLabel.place(x=89, y=timeLabel_y)
     minutesLabel.place(x=167, y=timeLabel_y)
     secondsLabel.place(x=250, y=timeLabel_y)
-    hoursValueLabel.place(x=67, y=timeLabel_y - 5)
+    hoursValueLabel.place(x=57, y=timeLabel_y - 5)
     minutesValueLabel.place(x=134, y=timeLabel_y - 5)
     secondsValueLabel.place(x=217, y=timeLabel_y - 5)
     # buttons
@@ -208,6 +208,7 @@ def showMainMenu():
     resetTimeButton.place(x=250, y=timeButtons_y)
     timeSettingsButton.place(x=70, y=settingsButtons_y)
     wordSettingsButton.place(x=200, y=settingsButtons_y)
+    menuButton.place(x=250, y=settingsButtons_y+50)
 
 
 def hideMainMenu():
@@ -229,8 +230,14 @@ def hideMainMenu():
     wordSettingsButton.place_forget()
 
 
+def getEnglishCategory():
+    if language.get() == 'polish':
+        return polish_english_dictionary[newCategory.get()]
+    return newCategory.get()
+
+
 def availableWords(target_database='all'):
-    word_category = newCategory.get()
+    word_category = getEnglishCategory()
     if word_category == 'all':
         database = target_database
     else:
@@ -251,11 +258,10 @@ def availableWords(target_database='all'):
             select_query += ' AND '
         select_query += f'difficulty == \'{newDifficulty.get()}\''
     select_query += ';'
-    connection = sqlite3.connect(french_database)
+    connection = sqlite3.connect(frenchDatabase)
     cursor = connection.cursor()
     available_words_list = []
     if database != 'all':
-        print(select_query)
         available_words_list = cursor.execute(select_query).fetchall()
         for i in range(len(available_words_list)):
             available_words_list[i] = list(available_words_list[i]) + [database[:-1]]
@@ -278,11 +284,8 @@ def disappearButton(button):
 def playGame():
     game_window = Toplevel(master)
     game_window.geometry("500x240")
-    game_window.title("Word guessing")
+    game_window.title(gameTitle.get())
     game_window.attributes('-topmost', True)
-    word_info = ['pl', 'fr']
-    pl_word = StringVar()
-    pl_word.set(word_info[0])
     available_words_list = availableWords()
 
     def the_game(remaining_words_list):
@@ -311,7 +314,11 @@ def playGame():
 
             main_word_text = StringVar()
             main_word_text.set(random_word[0])
-            word_type_label = Label(game_window, font=("Arial", 18), text=random_word[-1])
+            if language.get() == 'polish':
+                temp_type_label = 'Typ słowa: ' + english_polish_dictionary[random_word[-1]]
+            else:
+                temp_type_label = 'Word type' + random_word[-1]
+            word_type_label = Label(game_window, pady=10, font=("Arial", 18), text=temp_type_label)
             word_type_label.pack()
             main_word_button = Button(game_window, font=("Arial", 18), text=polish_word, height=3, width=30,
                                       command=lambda: mainWordButtonAction(polish_word, french_word))
@@ -331,54 +338,56 @@ def playGame():
                 except TypeError:
                     return
 
-            continue_game_button = Button(game_window, height=3, width=20, text='continue_game',
+            continue_game_button = Button(game_window, height=3, width=20, textvariable=continueGameLabelText,
                                           command=continueGameButtonAction)
             continue_game_button.place(x=35, y=160)
-            stop_game_button = Button(game_window, height=3, width=20, text='stop_game', command=stopGameButtonAction)
+            stop_game_button = Button(game_window, height=3, width=20, textvariable=stopGameLabelText,
+                                      command=stopGameButtonAction)
             stop_game_button.place(x=315, y=160)
 
             def wordDetailsButtonAction():
 
                 def createDetailsWindow():
                     window = Toplevel(game_window)
-                    window.title("Word guessing")
+                    window.title(detailsWindowName.get())
                     window.attributes('-topmost', True)
                     return window
 
                 word_category = random_word[-1]
-                print(word_category)
                 if word_category in ['basic', 'adjective']:
                     messagebox.showinfo('No details', 'There are no details available for this word!')
                 elif word_category == 'noun':
                     details_window = createDetailsWindow()
-                    Label(details_window, text=f'Word gender: {random_word[2]}').pack()
+                    if language.get() == 'polish':
+                        temp_word_gender = english_polish_dictionary[random_word[2]]
+                    else:
+                        temp_word_gender = random_word[2]
+                    Label(details_window, text=f'{wordGenderLabelText.get()}: {temp_word_gender}').pack()
                 elif word_category == 'verb':
                     details_window = createDetailsWindow()
-                    single_and_plural_y = 10
-                    base_x = 10
-                    singular_x = base_x + 70
-                    plural_x = singular_x + 150
-                    first_person_y = single_and_plural_y + 25
-                    second_person_y = first_person_y + 25
-                    third_person_y = second_person_y + 25
-                    Label(details_window, anchor="w", text="Singular").place(x=singular_x, y=single_and_plural_y)
-                    Label(details_window, anchor="w", text="Plural").place(x=plural_x, y=single_and_plural_y)
-                    Label(details_window, anchor="e", text="1st person").place(x=base_x, y=first_person_y)
-                    Label(details_window, anchor="e", text="2nd person").place(x=base_x, y=second_person_y)
-                    Label(details_window, anchor="e", text="3rd person").place(x=base_x, y=third_person_y)
-                    Label(details_window, anchor="w", width=20, text=random_word[2]).place(x=singular_x,
-                                                                                           y=first_person_y)
-                    Label(details_window, anchor="w", width=20, text=random_word[3]).place(x=singular_x,
-                                                                                           y=second_person_y)
-                    Label(details_window, anchor="w", width=20, text=random_word[4]).place(x=singular_x,
-                                                                                           y=third_person_y)
-                    Label(details_window, anchor="w", width=20, text=random_word[5]).place(x=plural_x, y=first_person_y)
-                    Label(details_window, anchor="w", width=20, text=random_word[6]).place(x=plural_x,
-                                                                                           y=second_person_y)
-                    Label(details_window, anchor="w", width=20, text=random_word[7]).place(x=plural_x, y=third_person_y)
-                    details_window.geometry('400x200')
+                    conjugation_frame = LabelFrame(details_window)
+                    conjugation_label = Label(conjugation_frame, textvariable=conjugationLabelText, pady=10,
+                                              font=("Arial", 13), anchor='center')
+                    conjugation_frame.pack(padx=20, pady=20)
+                    conjugation_label.grid(row=0, column=0, columnspan=2)
+                    Label(conjugation_frame, anchor="w", textvariable=singularLabelText, font=("Arial", 11))\
+                        .grid(row=1, column=1)
+                    Label(conjugation_frame, anchor="w", textvariable=pluralLabelText, font=("Arial", 11))\
+                        .grid(row=1, column=2)
+                    Label(conjugation_frame, anchor="e", textvariable=firstPersonLabelText, font=("Arial", 11)).grid(
+                        row=2, column=0)
+                    Label(conjugation_frame, anchor="e", textvariable=secondPersonLabelText, font=("Arial", 11)).grid(
+                        row=3, column=0)
+                    Label(conjugation_frame, anchor="e", textvariable=thirdPersonLabelText, font=("Arial", 11)).grid(
+                        row=4, column=0)
+                    Label(conjugation_frame, width=20, text=random_word[2], font=("Arial", 11)).grid(row=2, column=1)
+                    Label(conjugation_frame, width=20, text=random_word[3], font=("Arial", 11)).grid(row=3, column=1)
+                    Label(conjugation_frame, width=20, text=random_word[4], font=("Arial", 11)).grid(row=4, column=1)
+                    Label(conjugation_frame, width=20, text=random_word[5], font=("Arial", 11)).grid(row=2, column=2)
+                    Label(conjugation_frame, width=20, text=random_word[6], font=("Arial", 11)).grid(row=3, column=2)
+                    Label(conjugation_frame, width=20, text=random_word[7], font=("Arial", 11)).grid(row=4, column=2)
 
-            word_details_button = Button(game_window, height=2, width=10, text='Word\ndetails',
+            word_details_button = Button(game_window, height=2, width=10, textvariable=detailsWindowName,
                                          command=wordDetailsButtonAction)
             word_details_button.place(x=207.5, y=160)
             all_game_buttons = [main_word_button, continue_game_button, stop_game_button, word_details_button]
@@ -400,11 +409,29 @@ def onClosing():
         master.destroy()
 
 
+def adjustToLanguage():
+    global properCategoryList, properDifficultiesList
+    if language.get() == 'polish':
+        properCategoryList = polishCategoryList
+        properDifficultiesList = polishDifficultiesList
+        for i in range(len(labelsList)):
+            labelsList[i].set(english_polish_dictionary[labelsTextList[i]])
+    else:
+        properCategoryList = englishCategoryList
+        properDifficultiesList = englishDifficultiesList
+        for i in range(len(labelsList)):
+            labelsList[i].set(labelsTextList[i])
+
+
+def openMenu():
+    master.destroy()
+
+
 master = Tk()
 photo = PhotoImage(file=image)
 master.iconphoto(True, photo)
 master.title("Pop-up quiz")
-master.geometry("360x200")
+master.geometry("360x250")
 
 # Time things
 hours = StringVar()
@@ -413,17 +440,24 @@ seconds = StringVar()
 newHours = StringVar()
 newMinutes = StringVar()
 newSeconds = StringVar()
+language = StringVar()
 counting = False
 playing = False
+language.set('polish')
 
 # Words things
 category = StringVar()
 newCategory = StringVar()
-categoryList = ["all", "basic", "noun", "verb", "adjective"]
-wordCategories = categoryList[1:]
+englishCategoryList = ["all", "basic", "noun", "verb", "adjective"]
+validWordCategoryList = ['basic', 'noun', 'verb', 'adjective']
+polishCategoryList = ["wszystko", "podstawowe", "rzeczownik", "czasownik", "przymiotnik"]
+properCategoryList = []
+wordCategories = englishCategoryList[1:]
 difficulty = StringVar()
 newDifficulty = StringVar()
-difficulties = ["-", "easy", "normal", "hard"]
+englishDifficultiesList = ["-", "easy", "normal", "hard"]
+polishDifficultiesList = ["-", "łatwe", "średnie", "trudne"]
+properDifficultiesList = []
 tag1 = StringVar()
 tag2 = StringVar()
 tag3 = StringVar()
@@ -438,36 +472,86 @@ newTag5 = StringVar()
 newTag6 = StringVar()
 newTagsList = [newTag1, newTag2, newTag3, newTag4, newTag5, newTag6]
 tagsList = [tag1, tag2, tag3, tag4, tag5, tag6]
+
 strictTags = IntVar()
 newStrictTags = IntVar()
 
+conjugationLabelText = StringVar()
+detailsWindowName = StringVar()
+resetSettingsButtonText = StringVar()
+saveSettingButtonText = StringVar()
+setWordsConstraintsLabelText = StringVar()
+wordCategoryLabelText = StringVar()
+tagsLabelText = StringVar()
+wordDifficultyLabelText = StringVar()
+saveNewTimeButtonText = StringVar()
+mainMenuLabelText = StringVar()
+hoursLabelText = StringVar()
+minutesLabelText = StringVar()
+secondsLabelText = StringVar()
+timeWindowTitle = StringVar()
+gameTitle = StringVar()
+strictTagsLabelText = StringVar()
+timeUntilQuizLabelText = StringVar()
+timeSettingLabelText = StringVar()
+wordsSettingLabelText = StringVar()
+continueGameLabelText = StringVar()
+stopGameLabelText = StringVar()
+singularLabelText = StringVar()
+pluralLabelText = StringVar()
+firstPersonLabelText = StringVar()
+secondPersonLabelText = StringVar()
+thirdPersonLabelText = StringVar()
+wordGenderLabelText = StringVar()
+labelsList = [conjugationLabelText, detailsWindowName, resetSettingsButtonText, saveSettingButtonText,
+              setWordsConstraintsLabelText, wordCategoryLabelText, tagsLabelText, wordDifficultyLabelText,
+              saveNewTimeButtonText, mainMenuLabelText, hoursLabelText, minutesLabelText, secondsLabelText,
+              timeWindowTitle, gameTitle, strictTagsLabelText, timeUntilQuizLabelText, timeSettingLabelText,
+              wordsSettingLabelText, continueGameLabelText, stopGameLabelText, singularLabelText, pluralLabelText,
+              firstPersonLabelText, secondPersonLabelText, thirdPersonLabelText, wordGenderLabelText]
+labelsTextList = ['Verb conjugation', 'Word\ndetails', 'Reset settings', 'Save new settings',
+                  'Set available word constraints', 'Word category', 'Tags', 'Word difficulty', 'Save new time',
+                  'Time between quizzes', 'hours', 'minutes', 'seconds', 'Time settings', 'Word quiz', 'Strict tags',
+                  'Time until quiz', "Time settings", "Word settings", 'Continue game', 'Stop game', 'Singular',
+                  'Plural', '1st person', '2nd person', '3rd person', 'Word gender']
+
 # All things
-settings = [hours, minutes, seconds, category, difficulty, strictTags, tag1, tag2, tag3, tag4, tag5, tag6]
+settings = [language, hours, minutes, seconds, category, difficulty, strictTags, tag1, tag2, tag3, tag4, tag5, tag6]
+
+english_polish_dictionary, polish_english_dictionary, allList, basicList, verbList, nounList, adjectiveList = \
+    generateDictionariesAndLanLists()
+availableLabels = createAvailableLabelsList(validWordCategoryList, tagsList)
+availableLabels.remove(None)
 
 # Set default values for variables
 readSettingsFromFile()
 prepareNewSettingsVariables()
 
 # Master label setting
-mainMenuTimeLabel = Label(master, anchor='center', text='Time until quiz', font=("Arial", 20))
 timeLabel_y = 55
-hoursLabel = Label(master, text=f'hours', width=6, anchor="w")
-minutesLabel = Label(master, text=f'minutes', width=6, anchor="w")
-secondsLabel = Label(master, text=f'seconds', width=6, anchor="w")
+mainMenuTimeLabel = Label(master, anchor='center', textvariable=timeUntilQuizLabelText, font=("Arial", 20))
+hoursLabel = Label(master, textvariable=hoursLabelText, width=6, anchor="w")
+minutesLabel = Label(master, textvariable=minutesLabelText, width=6, anchor="w")
+secondsLabel = Label(master, textvariable=secondsLabelText, width=6, anchor="w")
 hoursValueLabel = Label(master, textvariable=hours, width=2, font=("Arial", 18), anchor="e")
 minutesValueLabel = Label(master, textvariable=minutes, width=2, font=("Arial", 18), anchor="e")
 secondsValueLabel = Label(master, textvariable=seconds, width=2, font=("Arial", 18), anchor="e")
 
 # Master button setting
-buttonWidth = 10
+buttonWidth = 13
 timeButtons_y = timeLabel_y + 40
-startTimeButton = Button(master, text="START", width=buttonWidth, pady=2, command=startCountdown)
-stopTimeButton = Button(master, text="STOP", width=buttonWidth, pady=2, command=stopCountdown)
-resetTimeButton = Button(master, text="RESET", width=buttonWidth, pady=2, command=resetCountdown)
+startTimeButton = Button(master, text="START", width=buttonWidth, pady=2, command=startCountdown, bg='#59E575')
+stopTimeButton = Button(master, text="STOP", width=buttonWidth, pady=2, command=stopCountdown, bg='#E6978A')
+resetTimeButton = Button(master, text="RESET", width=buttonWidth, pady=2, command=resetCountdown, bg='#BAFEFF')
 settingsButtons_y = timeButtons_y + 50
-timeSettingsButton = Button(master, text="Time settings", width=buttonWidth, pady=2, command=openTimeSettings)
-wordSettingsButton = Button(master, text="Word settings", width=buttonWidth, pady=2, command=openWordsSettings)
+timeSettingsButton = Button(master, textvariable=timeSettingLabelText, width=buttonWidth, pady=2,
+                            command=openTimeSettings, bg='#C5D2EC')
+wordSettingsButton = Button(master, textvariable=wordsSettingLabelText, width=buttonWidth, pady=2,
+                            command=openWordsSettings, bg='#C5D2EC')
+menuButton = Button(master, text="MENU", width=buttonWidth, pady=2, command=openMenu, bg='#C5D2EC')
 
 master.protocol("WM_DELETE_WINDOW", onClosing)
+
+adjustToLanguage()
 showMainMenu()
 master.mainloop()

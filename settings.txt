@@ -1,7 +1,8 @@
+language = polish
 hours = 0
-minutes = 0
-seconds = 2
-category = all
+minutes = 5
+seconds = 0
+category = czasownik
 difficulty = -
 strict_tags = 0
 tag1 = 
@@ -9,4 +10,4 @@ tag2 =
 tag3 = 
 tag4 = 
 tag5 = 
-tag6 = a
+tag6 = 
