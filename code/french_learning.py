@@ -4,10 +4,12 @@ import os
 
 
 def openDatabase():
+    master.destroy()
     os.system('python database.py')
 
 
 def openQuizApp():
+    master.destroy()
     os.system('python quiz_app.py')
 
 
@@ -30,8 +32,10 @@ else:
     windowTitle = 'French word flashcards'
 
 Label(master, text=windowTitle, font=("Arial", 20)).grid(row=0, column=0, columnspan=2, pady=15, padx=55)
-Button(master, text=quizButtonText, command=openQuizApp, font=("Arial", 18)).grid(row=1, column=0)
-Button(master, text=databaseButtonText, command=openDatabase, font=("Arial", 18)).grid(row=1, column=1)
+quizButton = Button(master, text=quizButtonText, command=openQuizApp, font=("Arial", 18))
+quizButton.grid(row=1, column=0)
+dbButton = Button(master, text=databaseButtonText, command=openDatabase, font=("Arial", 18))
+dbButton.grid(row=1, column=1)
 
 master.resizable(width=False, height=False)
 master.mainloop()

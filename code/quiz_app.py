@@ -4,6 +4,7 @@ from ttkwidgets.autocomplete import AutocompleteEntry
 from auxiliary import *
 import time
 import random
+import os
 
 
 projectDirectory, frenchDatabase = loadDirectories()
@@ -425,6 +426,7 @@ def adjustToLanguage():
 
 def openMenu():
     master.destroy()
+    os.system('python french_learning.py')
 
 
 master = Tk()

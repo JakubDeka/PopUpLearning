@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from auxiliary import *
 from ttkwidgets.autocomplete import AutocompleteEntry
+import os
 
 
 project_directory, french_database = loadDirectories()
@@ -500,6 +501,7 @@ def changeLanguage():
 
 def openMenu():
     master.destroy()
+    os.system('python french_learning.py')
 
 
 master = Tk()
