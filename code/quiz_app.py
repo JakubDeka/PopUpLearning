@@ -55,6 +55,10 @@ def readSettingsFromFile():
 
 
 def SaveTime(window):
+    new_seconds = int(newHours.get())*3600 + int(newMinutes.get())*60 + int(newSeconds.get())
+    if new_seconds < 10:
+        messagebox.showwarning('Exceeded time limit', 'Time should be set to at least 10 seconds!')
+        return
     with open(appSettings, "r") as file:
         data = file.readlines()
     data[1] = 'hours = '
