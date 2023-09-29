@@ -1,17 +1,16 @@
 import sqlite3
 from pathlib import Path
+import os
 
 
-projectDirectory = Path("D:/PythonProjects/frenchPopUp")
+projectDirectory = Path(os.getcwd()[:-5])
 frenchDatabase = projectDirectory / "french_words.db"
 appSettings = projectDirectory / "settings.txt"
 tagLength = 6
 
 
 def loadDirectories():
-    project_directory = Path("D:/PythonProjects/frenchPopUp")
-    french_database = projectDirectory / "french_words.db"
-    return project_directory, french_database
+    return projectDirectory, frenchDatabase
 
 
 def intersection(list_1, list_2):
