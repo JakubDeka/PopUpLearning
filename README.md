@@ -6,6 +6,4 @@ All word records are stored in a database, which can be created via ```create_da
 
 Both applications can be also used by running ```french_learning.py```, where one can select which tool to use.
 
-# TODO
-
-App is available only in polish language, though the english version is on the way (date unspecified).
+App is available in two languages: polish and english. Language can be changed in the main window.
