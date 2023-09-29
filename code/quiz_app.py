@@ -232,9 +232,10 @@ def hideMainMenu():
 
 
 def getEnglishCategory():
-    if language.get() == 'polish':
-        return polish_english_dictionary[newCategory.get()]
-    return newCategory.get()
+    category_value = newCategory.get()
+    if category_value in polishCategoryList:
+        category_value = polish_english_dictionary[category_value]
+    return category_value
 
 
 def getEnglishDifficulty():
