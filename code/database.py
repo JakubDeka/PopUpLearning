@@ -96,8 +96,12 @@ def selectFoundWord(window, text):
     for i in range(len(tagsList), 0, -1):
         tagsList[tag_index].set(result[-i])
         tag_index += 1
-    wordDifficulty.set(english_polish_dictionary[result[-len(tagsList) - 1]])
-    wordCategory.set(english_polish_dictionary[database[:-1]])
+    if language.get() == 'polish':
+        wordDifficulty.set(english_polish_dictionary[result[-len(tagsList) - 1]])
+        wordCategory.set(english_polish_dictionary[database[:-1]])
+    else:
+        wordDifficulty.set(result[-len(tagsList) - 1])
+        wordCategory.set(database[:-1])
     ShowAppropriateEntries(master)
     if database == 'nouns':
         nounGender.set(english_polish_dictionary[result[2]])
@@ -120,18 +124,18 @@ def getEnglishWordCategory():
     return word_category
 
 
-def getEnglishWordDifficulty():
-    word_difficulty = wordCategory.get().lower()
-    if word_difficulty in polishWordDifficultyList:
-        word_difficulty = polish_english_dictionary[word_difficulty]
-    return word_difficulty
-
-
 def getEnglishNounGender():
     noun_gender = nounGender.get().lower()
     if noun_gender in polishNounGenderList:
         noun_gender = polish_english_dictionary[noun_gender]
     return noun_gender
+
+
+def getEnglishDifficulty():
+    difficulty = wordDifficulty.get().lower()
+    if difficulty in polishWordDifficultyList:
+        difficulty = polish_english_dictionary[difficulty]
+    return difficulty
 
 
 def buildQuery(function='find', target_database='basics'):
@@ -174,8 +178,9 @@ def buildQuery(function='find', target_database='basics'):
         if wordDifficulty.get() != '-':
             if no_conditions > 0:
                 find_query += ' AND '
-            find_query += f'difficulty == \'{wordDifficulty.get().lower()}\''
+            find_query += f'difficulty == \'{getEnglishDifficulty():}\''
         find_query += f' order by oid;'
+        print(find_query)
         query_parts.append(find_query)
     elif function == 'delete':
         query_parts.append(f'DELETE FROM {database}')
@@ -379,7 +384,7 @@ def changeWord():
 
 
 def removeWord():
-    if wordCategory.get().lower() == "all":
+    if getEnglishWordCategory() == "all":
         messagebox.showwarning("missing data", "You NEED to select one of the available WORD CATEGORY!")
         return
     if checkIfPolishAndFrenchWordsFilled():
@@ -408,7 +413,10 @@ def clearMainScreen(start=False):
         person.set('')
     wordDifficulty.set("-")
     if start:
-        wordCategory.set("wszystko")
+        if language.get() == 'polish':
+            wordCategory.set("wszystko")
+        else:
+            wordCategory.set("all")
         nounGender.set("-")
 
 
@@ -442,8 +450,7 @@ def adjustToLanguage():
     if language.get() == 'english':
         mainFrameWidthModifier.set(1)
         labelFramePadX.set(111)
-        # changeLanguageButton.place_forget()
-        # changeLanguageButton.place(x=430, y=5)
+        wordCategory.set('all')
         appMainLabelText.set('Tool for words management')
         changeLanguageText.set('Change language')
         categoryLabelText.set('Word category')
@@ -468,8 +475,7 @@ def adjustToLanguage():
         mainFrameWidthModifier.set(0.8)
         labelFramePadX.set(22)
         how_many_gender_button_times.set(4)
-        # changeLanguageButton.place_forget()
-        # changeLanguageButton.place(x=450, y=5)
+        wordCategory.set('wszystko')
         categoryLabelText.set('Kategoria słowa')
         polishWordLabelText1.set('Polskie słowo')
         frenchWordLabelText1.set('Francuskie słowo')
@@ -491,14 +497,6 @@ def adjustToLanguage():
         changeLanguageText.set('Zmień język')
 
 
-def changeLanguage():
-    if language.get() == 'english':
-        language.set('polish')
-    else:
-        language.set('english')
-    adjustToLanguage()
-
-
 def openMenu():
     master.destroy()
     os.system('python french_learning.py')
@@ -512,14 +510,14 @@ photo = PhotoImage(file=image)
 master.iconphoto(True, photo)
 
 how_many_gender_button_times = IntVar()
-language = StringVar()
-language.set('polish')
-wordCategoryList = ['all', 'basic', 'noun', 'verb', 'adjective']
+englishWordCategoryList = ['all', 'basic', 'noun', 'verb', 'adjective']
 polishWordCategoryList = ['wszystko', 'podstawowe', 'rzeczownik', 'czasownik', 'przymiotnik']
 validWordCategoryList = ['basic', 'noun', 'verb', 'adjective']
+wordCategoryList = []
 wordCategory = StringVar()
-wordDifficultyList = ['-', 'easy', 'medium', 'hard']
-polishWordDifficultyList = ['-', 'łatwy', 'średni', 'trudny']
+englishWordDifficultyList = ['-', 'easy', 'medium', 'hard']
+polishWordDifficultyList = ['-', 'łatwe', 'średnie', 'trudne']
+wordDifficultyList = []
 wordDifficulty = StringVar()
 nounGenderList = ['-', 'masculine', 'feminine']
 polishNounGenderList = ['-', 'męska', 'żeńska']
@@ -544,6 +542,16 @@ fourthPerson = StringVar()
 fifthPerson = StringVar()
 sixthPerson = StringVar()
 personsList = [firstPerson, secondPerson, thirdPerson, fourthPerson, fifthPerson, sixthPerson]
+language = StringVar()
+language.set(readLanguageFromFile())
+if language.get() == 'english':
+    wordDifficultyList = englishWordDifficultyList
+    wordCategoryList = englishWordCategoryList
+else:
+    wordDifficultyList = polishWordDifficultyList
+    wordCategoryList = polishWordCategoryList
+wordCategory.set(wordCategoryList[0])
+print(wordCategory.get())
 
 appMainLabelText = StringVar()
 changeLanguageText = StringVar()
@@ -579,8 +587,6 @@ mainFrameWidthModifier.set(0.8)
 Label(master, textvariable=appMainLabelText, font=("Arial", 20), bg='#D2DEE6').grid(row=0, column=1, ipadx=10, ipady=5)
 Label(master, text='', font=("Arial", 20), bg='#D2DEE6').grid(row=0, column=0, ipadx=10, ipady=5)
 Label(master, text='', font=("Arial", 20), bg='#D2DEE6').grid(row=0, column=3, ipadx=10, ipady=5)
-# changeLanguageButton = Button(master, textvariable=changeLanguageText, command=changeLanguage)
-# changeLanguageButton.place(x=450, y=5)
 
 # Main frame
 mainFrame = LabelFrame(master, padx=30, pady=2)
@@ -590,7 +596,7 @@ wordEntryWidth = 60
 wordEntrySpan = 4
 wordCategoryDropListLabel = Label(mainFrame, textvariable=categoryLabelText, pady=8)
 wordCategoryDropListLabel.grid(row=0, column=0)
-wordCategoryDropList = OptionMenu(mainFrame, wordCategory, *polishWordCategoryList, command=ShowAppropriateEntries)
+wordCategoryDropList = OptionMenu(mainFrame, wordCategory, *wordCategoryList)
 wordCategoryDropList.grid(row=0, column=1, ipadx=12)
 wordCategoryDropList.config(width=7)
 
@@ -605,7 +611,7 @@ frenchWordEntry.grid(row=2, columnspan=wordEntrySpan, column=1)
 
 wordDifficultyLabelText = Label(mainFrame, textvariable=wordDifficultyLabelText1, pady=8)
 wordDifficultyLabelText.grid(row=0, column=3)
-wordDifficultyDropList = OptionMenu(mainFrame, wordDifficulty, *polishWordDifficultyList)
+wordDifficultyDropList = OptionMenu(mainFrame, wordDifficulty, *wordDifficultyList)
 wordDifficultyDropList.grid(row=0, column=4, ipadx=12)
 wordDifficultyDropList.config(width=7)
 
@@ -700,7 +706,7 @@ entriesList = [polishWordEntry, frenchWordEntry, firstPersonEntry, secondPersonE
 dropdownsList = [wordCategoryDropList, wordDifficultyDropList, frenchGender]
 
 # master.geometry(f"680x200")
-clearMainScreen(True)
 adjustToLanguage()
+clearMainScreen(True)
 master.resizable(width=False, height=False)
 master.mainloop()

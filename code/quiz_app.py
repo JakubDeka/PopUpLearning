@@ -237,6 +237,13 @@ def getEnglishCategory():
     return newCategory.get()
 
 
+def getEnglishDifficulty():
+    difficulty_value = newDifficulty.get().lower()
+    if difficulty_value in polishDifficultiesList:
+        difficulty_value = polish_english_dictionary[difficulty_value]
+    return difficulty_value
+
+
 def availableWords(target_database='all'):
     word_category = getEnglishCategory()
     if word_category == 'all':
@@ -257,7 +264,7 @@ def availableWords(target_database='all'):
     if difficulty_present:
         if tags_present:
             select_query += ' AND '
-        select_query += f'difficulty == \'{newDifficulty.get()}\''
+        select_query += f'difficulty == \'{getEnglishDifficulty():}\''
     select_query += ';'
     connection = sqlite3.connect(frenchDatabase)
     cursor = connection.cursor()
@@ -411,7 +418,7 @@ def onClosing():
 
 
 def adjustToLanguage():
-    global properCategoryList, properDifficultiesList
+    global properCategoryList, properDifficultiesList, newCategory
     if language.get() == 'polish':
         properCategoryList = polishCategoryList
         properDifficultiesList = polishDifficultiesList
@@ -422,6 +429,7 @@ def adjustToLanguage():
         properDifficultiesList = englishDifficultiesList
         for i in range(len(labelsList)):
             labelsList[i].set(labelsTextList[i])
+    category.set(properCategoryList[0])
 
 
 def openMenu():
@@ -445,7 +453,7 @@ newSeconds = StringVar()
 language = StringVar()
 counting = False
 playing = False
-language.set('polish')
+language.set(readLanguageFromFile())
 
 # Words things
 category = StringVar()
@@ -458,7 +466,7 @@ wordCategories = englishCategoryList[1:]
 difficulty = StringVar()
 newDifficulty = StringVar()
 englishDifficultiesList = ["-", "easy", "normal", "hard"]
-polishDifficultiesList = ["-", "łatwe", "średnie", "trudne"]
+polishDifficultiesList = ['-', 'łatwe', 'średnie', 'trudne']
 properDifficultiesList = []
 tag1 = StringVar()
 tag2 = StringVar()

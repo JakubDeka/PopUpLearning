@@ -96,3 +96,11 @@ def readLanguageFromFile():
     file = open(appSettings, "r")
     line = file.readline()
     return line.split(' ')[-1].split('\n')[0]
+
+
+def saveLanguageToFile(language):
+    with open(appSettings, "r") as file:
+        data = file.readlines()
+    data[0] = f'language = {language}\n'
+    with open(appSettings, 'w') as file:
+        file.writelines(data)
