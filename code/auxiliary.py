@@ -78,7 +78,7 @@ def generateDictionariesAndLanLists():
                                  'Time between quizzes': 'Czas pomiędzy quizami', 'Save new time': 'Zapisz czas',
                                  'Word quiz': 'Słowny quiz', 'Time until quiz': 'Czas do quizu',
                                  'Continue game': 'Kontynuuj grę', 'Stop game': 'Przestań grać',
-                                 'Word\ndetails': 'Szczegóły\nsłowa', 'Word gender': 'Płeć słowa'}
+                                 'Word \ndetails': 'Szczegóły \nsłowa', 'Word gender': 'Płeć słowa'}
     polish_english_dictionary = {}
     all_list = ['all', english_polish_dictionary['all']]
     basic_list = ['basic', english_polish_dictionary['basic']]

@@ -1,10 +1,7 @@
-import sqlite3
-from pathlib import Path
+from auxiliary import *
 
-
-project_directory = Path("/")
-french_database = project_directory / "french_words.db"
-connection = sqlite3.connect(french_database)
+projectDirectory, frenchDatabase = loadDirectories()
+connection = sqlite3.connect(frenchDatabase)
 cursor = connection.cursor()
 
 cursor.execute("""

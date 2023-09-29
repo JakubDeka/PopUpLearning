@@ -1,12 +1,11 @@
 from tkinter import *
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from auxiliary import *
 from ttkwidgets.autocomplete import AutocompleteEntry
 import os
 
-
-project_directory, french_database = loadDirectories()
-image = project_directory / "images/french_flag_database.png"
+projectDirectory, frenchDatabase = loadDirectories()
+image = projectDirectory / "images/french_flag_database.png"
 
 
 def HideVerbPersons():
@@ -180,7 +179,6 @@ def buildQuery(function='find', target_database='basics'):
                 find_query += ' AND '
             find_query += f'difficulty == \'{getEnglishDifficulty():}\''
         find_query += f' order by oid;'
-        print(find_query)
         query_parts.append(find_query)
     elif function == 'delete':
         query_parts.append(f'DELETE FROM {database}')
@@ -190,7 +188,10 @@ def buildQuery(function='find', target_database='basics'):
 
 
 def packWordsFoundInTable(window, table_name, result):
-    Label(window, text=f'{table_name.upper()} words', height=1, font=("Arial", 20)).pack()
+    text = table_name.upper()+'S'
+    if language.get() == 'polish':
+        text = english_polish_dictionary[table_name].upper() + 'I'
+    Label(window, text=text, height=1, font=("Arial", 20)).pack()
     texts = [f'{table_name[0].upper(), row[0]}   PL: {row[1]}  ,  FR: {row[2]}' for row in result]
     buttons = []
     for j in range(len(texts)):
@@ -234,8 +235,26 @@ def findWord():
         disableButtons()
         disableEntriesAndDropdown()
         # create windows with finds
-        top = createFoundWordsWindow()
-        # add title and buttons with words
+        found_word_window = createFoundWordsWindow()
+        found_word_window.geometry('500x500')
+        master.resizable(width=False, height=False)
+
+        main_frame = Frame(found_word_window)
+        main_frame.pack(fill=BOTH, expand=1)
+
+        some_canvas = Canvas(main_frame)
+        some_canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+        scrollbar = ttk.Scrollbar(main_frame, orient=VERTICAL, command=some_canvas.yview)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        some_canvas.configure(yscrollcommand=scrollbar.set)
+        some_canvas.bind('<Configure>', lambda e: some_canvas.configure(scrollregion=some_canvas.bbox('all')))
+
+        second_frame = Frame(some_canvas)
+
+        some_canvas.create_window((0, 0), window=second_frame, anchor='nw')
+
         tag_words = createTagWordsList(tagsList)
         if strictTagsValue.get():
             for i in range(len_categories - 1, -1, -1):
@@ -245,14 +264,14 @@ def findWord():
                     del result[i]
                     len_categories -= 1
         for i in range(len_categories - 1, -1, -1):
-            packWordsFoundInTable(top, result_categories[i], result[i])
+            packWordsFoundInTable(second_frame, result_categories[i], result[i])
 
         def on_closing():
             enableButtons()
             enableEntriesAndDropdown()
-            top.destroy()
+            found_word_window.destroy()
 
-        top.protocol("WM_DELETE_WINDOW", on_closing)
+        found_word_window.protocol("WM_DELETE_WINDOW", on_closing)
     connection.commit()
     connection.close()
 
@@ -523,7 +542,7 @@ nounGenderList = ['-', 'masculine', 'feminine']
 polishNounGenderList = ['-', 'męska', 'żeńska']
 nounGender = StringVar()
 
-english_polish_dictionary, polish_english_dictionary, allList, basicList, verbList, nounList, adjectiveList =\
+english_polish_dictionary, polish_english_dictionary, allList, basicList, verbList, nounList, adjectiveList = \
     generateDictionariesAndLanLists()
 
 tag1 = StringVar()
@@ -551,7 +570,6 @@ else:
     wordDifficultyList = polishWordDifficultyList
     wordCategoryList = polishWordCategoryList
 wordCategory.set(wordCategoryList[0])
-print(wordCategory.get())
 
 appMainLabelText = StringVar()
 changeLanguageText = StringVar()
@@ -596,7 +614,7 @@ wordEntryWidth = 60
 wordEntrySpan = 4
 wordCategoryDropListLabel = Label(mainFrame, textvariable=categoryLabelText, pady=8)
 wordCategoryDropListLabel.grid(row=0, column=0)
-wordCategoryDropList = OptionMenu(mainFrame, wordCategory, *wordCategoryList)
+wordCategoryDropList = OptionMenu(mainFrame, wordCategory, *wordCategoryList, command=ShowAppropriateEntries)
 wordCategoryDropList.grid(row=0, column=1, ipadx=12)
 wordCategoryDropList.config(width=7)
 

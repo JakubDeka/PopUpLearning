@@ -524,7 +524,7 @@ labelsList = [conjugationLabelText, detailsWindowName, resetSettingsButtonText, 
               timeWindowTitle, gameTitle, strictTagsLabelText, timeUntilQuizLabelText, timeSettingLabelText,
               wordsSettingLabelText, continueGameLabelText, stopGameLabelText, singularLabelText, pluralLabelText,
               firstPersonLabelText, secondPersonLabelText, thirdPersonLabelText, wordGenderLabelText]
-labelsTextList = ['Verb conjugation', 'Word\ndetails', 'Reset settings', 'Save new settings',
+labelsTextList = ['Verb conjugation', 'Word \ndetails', 'Reset settings', 'Save new settings',
                   'Set available word constraints', 'Word category', 'Tags', 'Word difficulty', 'Save new time',
                   'Time between quizzes', 'hours', 'minutes', 'seconds', 'Time settings', 'Word quiz', 'Strict tags',
                   'Time until quiz', "Time settings", "Word settings", 'Continue game', 'Stop game', 'Singular',
