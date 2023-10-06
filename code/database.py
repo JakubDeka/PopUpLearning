@@ -57,7 +57,7 @@ def ShowAppropriateEntries(master_window):
 
 
 def checkIfPolishAndFrenchWordsFilled():
-    if (len(polishWordEntry.get()) > 0) & (len(frenchWordEntry.get()) > 0):
+    if (len(getPolishWord()) > 0) & (len(getFrenchWord()) > 0):
         return True
     return False
 
@@ -69,7 +69,7 @@ def createFoundWordsWindow():
     return top
 
 
-def selectFoundWord(window, text):
+def selectFoundWord(window_to_close, text):
     enableButtons()
     enableEntriesAndDropdown()
     words = text.split()
@@ -113,7 +113,7 @@ def selectFoundWord(window, text):
         sixthPerson.set(result[7])
     connection.commit()
     connection.close()
-    window.destroy()
+    window_to_close.destroy()
 
 
 def getEnglishWordCategory():
@@ -137,14 +137,21 @@ def getEnglishDifficulty():
     return difficulty
 
 
+def getPolishWord():
+    return polishWordEntry.get().lower().strip()
+
+
+def getFrenchWord():
+    return frenchWordEntry.get().lower().strip()
+
+
 def buildQuery(function='find', target_database='basics'):
     names = findTableColumnNames(target_database)
     word_category = getEnglishWordCategory()
     database = word_category + "s"
     query_parts = []
     select_query_part = f'SELECT * FROM {database}'
-    where_query_part = f' WHERE {names[0]} = \'{polishWordEntry.get().lower()}\' AND {names[1]} = ' \
-                       f'\'{frenchWordEntry.get().lower()}\';'
+    where_query_part = f' WHERE {names[0]} = \'{getPolishWord()}\' AND {names[1]} = \'{getFrenchWord()}\';'
     query_parts.append(select_query_part)
     query_parts.append(where_query_part)
     if function == 'find':
@@ -152,19 +159,17 @@ def buildQuery(function='find', target_database='basics'):
             database = target_database
         find_query = f'SELECT oid, * FROM {database}'
         tag_words = createTagWordsList(tagsList)
-        noun_gender = nounGender.get().lower()
-        if (wordDifficulty.get() != '-') | (len(tag_words) > 0) | (len(polishWordEntry.get()) > 0) | (
-                len(frenchWordEntry.get()) > 0) | (word_category == 'noun' and noun_gender != '-'):
+        noun_gender = getEnglishNounGender()
+        if (wordDifficulty.get() != '-') | (len(tag_words) > 0) | (len(getPolishWord()) > 0) | (
+                len(getFrenchWord()) > 0) | (word_category == 'noun' and noun_gender != '-'):
             find_query += ' WHERE '
         no_conditions = 0
         # query condition for names
         if checkIfPolishAndFrenchWordsFilled():
-            find_query += f'({names[0]}==\'{polishWordEntry.get().lower()}\' AND {names[1]}==' \
-                          f'\'{frenchWordEntry.get().lower()}\')'
+            find_query += f'({names[0]}==\'{getPolishWord()}\' AND {names[1]}==\'{getFrenchWord()}\')'
             no_conditions += 1
-        elif (len(polishWordEntry.get()) > 0) | (len(frenchWordEntry.get()) > 0):
-            find_query += f'({names[0]}==\'{polishWordEntry.get().lower()}\' OR {names[1]}==' \
-                          f'\'{frenchWordEntry.get().lower()}\')'
+        elif (len(getPolishWord()) > 0) | (len(getFrenchWord()) > 0):
+            find_query += f'({names[0]}==\'{getPolishWord()}\' OR {names[1]}==\'{getFrenchWord()}\')'
             no_conditions += 1
         # query condition for tags
         if len(tag_words) > 0:
@@ -187,16 +192,18 @@ def buildQuery(function='find', target_database='basics'):
     return query_parts
 
 
-def packWordsFoundInTable(window, table_name, result):
+def packWordsFoundInTable(window, window_to_close, table_name, result):
     text = table_name.upper()+'S'
     if language.get() == 'polish':
         text = english_polish_dictionary[table_name].upper() + 'I'
+    if table_name in ['basic']:
+        text = text[:-1]
     Label(window, text=text, height=1, font=("Arial", 20)).pack()
     texts = [f'{table_name[0].upper(), row[0]}   PL: {row[1]}  ,  FR: {row[2]}' for row in result]
     buttons = []
     for j in range(len(texts)):
         buttons.append(Button(window, height=1, text=texts[j], font=("Arial", 14), width=40, pady=1,
-                              command=lambda i=j: selectFoundWord(window, texts[i])))
+                              command=lambda i=j: selectFoundWord(window_to_close, texts[i])))
     for button in buttons:
         button.pack()
 
@@ -264,7 +271,7 @@ def findWord():
                     del result[i]
                     len_categories -= 1
         for i in range(len_categories - 1, -1, -1):
-            packWordsFoundInTable(second_frame, result_categories[i], result[i])
+            packWordsFoundInTable(second_frame, found_word_window, result_categories[i], result[i])
 
         def on_closing():
             enableButtons()
@@ -319,8 +326,8 @@ def addWord():
     else:
         messagebox.showwarning("missing data", "You NEED to fill POLISH AND FRENCH WORD entries!")
         return None
-    new_polish_word = polishWordEntry.get().lower()
-    new_french_word = frenchWordEntry.get().lower()
+    new_polish_word = getPolishWord()
+    new_french_word = getFrenchWord()
     if word_category == 'basic':
         query_dictionary = {f'polish_word': new_polish_word,
                             f'french_word': new_french_word}
@@ -328,26 +335,27 @@ def addWord():
         query_dictionary = {f'polish_{word_category}': new_polish_word,
                             f'french_{word_category}': new_french_word}
     if word_category == "noun":
-        if nounGender.get() == '-':
+        gender = getEnglishNounGender()
+        if gender == '-':
             messagebox.showwarning("missing data", "You NEED to specify GENDER of the noun!")
             return
-        query_dictionary['french_gender'] = nounGender.get().lower()
+        query_dictionary['french_gender'] = gender
     elif word_category == "verb":
         for i in range(len(verbEntryList)):
-            verb_value = verbEntryList[i].get().lower()
+            verb_value = verbEntryList[i].get().lower().strip()
             if len(verb_value) == 0:
                 query_dictionary[db_verb_list[i]] = None
             else:
                 query_dictionary[db_verb_list[i]] = f'{verb_value}'
     word_tags_list = []
     for i in range(len(tagsList)):
-        tag = tagsList[i].get().lower()
+        tag = tagsList[i].get().lower().strip()
         word_tags_list.append(tag)
         if len(tag) == 0:
             query_dictionary[f'tag{i + 1}'] = None
         else:
             query_dictionary[f'tag{i + 1}'] = f'{tag}'
-    query_dictionary['difficulty'] = f'{wordDifficulty.get().lower()}'
+    query_dictionary['difficulty'] = f'{getEnglishDifficulty()}'
     try:
         cursor.execute(query, query_dictionary)
         messagebox.showinfo('Success', 'Word has been added!')
@@ -379,23 +387,24 @@ def changeWord():
         return
     middle_parts = []
     if word_category == "noun":
-        middle_parts.append(f'french_gender = {nounGender.get().lower()}')
+        middle_parts.append(f'french_gender = \'{getEnglishNounGender()}\'')
     elif word_category == "verb":
         for i in range(len(verbEntryList)):
-            value = verbEntryList[i].get().lower()
+            value = verbEntryList[i].get().lower().strip()
             if len(value) == 0:
                 middle_parts.append(f'{db_verb_list[i]} = NULL')
             else:
                 middle_parts.append(f'{db_verb_list[i]} = \'{value}\'')
     for i in range(len(tagsList)):
-        tag = tagsList[i].get().lower()
+        tag = tagsList[i].get().lower().strip()
         if len(tag) == 0:
             middle_parts.append(f'tag{i + 1} = NULL')
         else:
             middle_parts.append(f'tag{i + 1} = \'{tag}\'')
-    middle_parts.append(f'difficulty = \'{wordDifficulty.get().lower()}\'')
+    middle_parts.append(f'difficulty = \'{getEnglishDifficulty()}\'')
     middle = ', '.join(middle_parts)
     update_query = update_query_part + middle + where_query_part
+    print(update_query)
     cursor.execute(update_query)
     connection.commit()
     connection.close()
@@ -436,7 +445,7 @@ def clearMainScreen(start=False):
             wordCategory.set("wszystko")
         else:
             wordCategory.set("all")
-        nounGender.set("-")
+    nounGender.set("-")
 
 
 def enableButtons():

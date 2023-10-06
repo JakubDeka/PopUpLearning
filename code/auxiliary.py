@@ -28,7 +28,7 @@ def restrictWordsToStrictTags(word_list, tag_words):
 
 
 def createTagWordsList(tag_list):
-    return [tag.get().lower() for tag in tag_list if len(tag.get()) > 0]
+    return [tag.get().lower().strip() for tag in tag_list if len(tag.get()) > 0]
 
 
 def uniqueValuesInListLike(list_like):
