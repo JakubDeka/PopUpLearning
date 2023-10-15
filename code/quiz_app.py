@@ -10,6 +10,7 @@ import os
 projectDirectory, frenchDatabase = loadDirectories()
 image = projectDirectory / "images/french_flag.png"
 appSettings = projectDirectory / "settings.txt"
+normal_symbols, strange_symbols = generateNormalAndStrangeSymbolDicts()
 
 
 def startCountdown():
@@ -256,7 +257,7 @@ def availableWords(target_database='all'):
     else:
         database = word_category + "s"
     select_query = f'SELECT * FROM {database}'
-    tag_words = createTagWordsList(newTagsList)
+    tag_words = createTagWordsList(newTagsList, normal_symbols)
     tags_present = (len(tag_words) > 0)
     difficulty_present = (newDifficulty.get() != '-')
     if tags_present or difficulty_present:
@@ -310,6 +311,11 @@ def playGame():
             resetCountdown()
             startCountdown()
 
+        def changeGameMenuState(state):
+            word_details_button['state'] = state
+            for button in game_buttons:
+                button['state'] = state
+
         if rounds_left == 0:
             messagebox.showinfo('No more words', 'There are no more words to be shown')
             stopGameButtonAction()
@@ -341,7 +347,7 @@ def playGame():
                 for button in all_game_buttons:
                     button['state'] = 'disabled'
                 answer = messagebox.askquestion('Skip word', 'Would you like to skip this word in this run?')
-                if not answer:
+                if answer == 'no':
                     remaining_words_list.append(random_word)
                 try:
                     for button in all_game_buttons:
@@ -357,6 +363,7 @@ def playGame():
             stop_game_button = Button(game_window, height=3, width=20, textvariable=stopGameLabelText,
                                       command=stopGameButtonAction)
             stop_game_button.place(x=315, y=160)
+            game_buttons = [main_word_button, continue_game_button, stop_game_button]
 
             def wordDetailsButtonAction():
 
@@ -367,16 +374,18 @@ def playGame():
                     return window
 
                 word_category = random_word[-1]
-                if word_category in ['basic', 'adjective']:
+                if word_category not in ['noun', 'verb']:
                     messagebox.showinfo('No details', 'There are no details available for this word!')
-                elif word_category == 'noun':
+                    return
+                changeGameMenuState('disabled')
+                if word_category == 'noun':
                     details_window = createDetailsWindow()
                     if language.get() == 'polish':
                         temp_word_gender = english_polish_dictionary[random_word[2]]
                     else:
                         temp_word_gender = random_word[2]
                     Label(details_window, text=f'{wordGenderLabelText.get()}: {temp_word_gender}').pack()
-                elif word_category == 'verb':
+                else:
                     details_window = createDetailsWindow()
                     conjugation_frame = LabelFrame(details_window)
                     conjugation_label = Label(conjugation_frame, textvariable=conjugationLabelText, pady=10,
@@ -399,6 +408,12 @@ def playGame():
                     Label(conjugation_frame, width=20, text=random_word[5], font=("Arial", 11)).grid(row=2, column=2)
                     Label(conjugation_frame, width=20, text=random_word[6], font=("Arial", 11)).grid(row=3, column=2)
                     Label(conjugation_frame, width=20, text=random_word[7], font=("Arial", 11)).grid(row=4, column=2)
+
+                    def on_closing():
+                        changeGameMenuState('active')
+                        details_window.destroy()
+
+                    details_window.protocol("WM_DELETE_WINDOW", on_closing)
 
             word_details_button = Button(game_window, height=2, width=10, textvariable=detailsWindowName,
                                          command=wordDetailsButtonAction)

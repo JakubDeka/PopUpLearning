@@ -13,6 +13,20 @@ def loadDirectories():
     return projectDirectory, frenchDatabase
 
 
+def generateNormalAndStrangeSymbolDicts():
+    normal_symbols = {'\'': 'ƥ', '\"': 'ƣ'}
+    strange_symbols = {}
+    for key, value in normal_symbols.items():
+        strange_symbols[value] = key
+    return normal_symbols, strange_symbols
+
+
+def replaceSymbolsInString(string, symbols_dictionary):
+    for symbol in symbols_dictionary:
+        string = string.replace(symbol, symbols_dictionary[symbol])
+    return string
+
+
 def intersection(list_1, list_2):
     temp = set(list_2)
     list_3 = [value for value in list_1 if value in temp]
@@ -27,8 +41,17 @@ def restrictWordsToStrictTags(word_list, tag_words):
             del word_list[i]
 
 
-def createTagWordsList(tag_list):
-    return [tag.get().lower().strip() for tag in tag_list if len(tag.get()) > 0]
+def createTagWordsList(tag_list, symbols_dictionary):
+    tag_words_list = [replaceSymbolsInString(tag.get().lower(), symbols_dictionary) for tag in tag_list
+                      if (len(tag.get()) > 0)]
+    return tag_words_list
+
+
+def addUniqueFromListToList(old_list, new_list):
+    for element in new_list:
+        if element not in old_list:
+            old_list.append(element)
+    return old_list
 
 
 def uniqueValuesInListLike(list_like):
