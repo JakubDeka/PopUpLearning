@@ -1,8 +1,9 @@
 language = polish
+taught_language = french
 hours = 0
-minutes = 5
+minutes = 45
 seconds = 0
-category = czasownik
+category = wszystko
 difficulty = -
 strict_tags = 0
 tag1 = 

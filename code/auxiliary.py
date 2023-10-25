@@ -4,13 +4,13 @@ import os
 
 
 projectDirectory = Path(os.getcwd()[:-5])
-frenchDatabase = projectDirectory / "french_words.db"
+# foreignDatabase = projectDirectory / "french_words.db"
 appSettings = projectDirectory / "settings.txt"
 tagLength = 6
 
 
-def loadDirectories():
-    return projectDirectory, frenchDatabase
+def loadDirectories(taught_language):
+    return projectDirectory, projectDirectory / f"{taught_language}_words.db"
 
 
 def generateNormalAndStrangeSymbolDicts():
@@ -59,8 +59,9 @@ def uniqueValuesInListLike(list_like):
     return list(list_set)
 
 
-def createAvailableLabelsList(valid_word_category_list, tags_list):
-    connection = sqlite3.connect(frenchDatabase)
+def createAvailableLabelsList(valid_word_category_list, tags_list, taught_language):
+    project_directory, foreign_database = loadDirectories(taught_language)
+    connection = sqlite3.connect(foreign_database)
     cursor = connection.cursor()
     labels_list = []
     for word_category in valid_word_category_list:
@@ -116,6 +117,13 @@ def generateDictionariesAndLanLists():
 
 def readLanguageFromFile():
     file = open(appSettings, "r")
+    line = file.readline()
+    return line.split(' ')[-1].split('\n')[0]
+
+
+def readTaughtLanguageFromFile():
+    file = open(appSettings, "r")
+    line = file.readline()
     line = file.readline()
     return line.split(' ')[-1].split('\n')[0]
 

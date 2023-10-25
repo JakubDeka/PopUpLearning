@@ -1,11 +1,7 @@
-from tkinter import *
-from tkinter import messagebox, ttk
-
 from auxiliary import *
+from generate_database_elements import *
 from ttkwidgets.autocomplete import AutocompleteEntry
 
-projectDirectory, frenchDatabase = loadDirectories()
-image = projectDirectory / "images/french_flag_database.png"
 normal_symbols, strange_symbols = generateNormalAndStrangeSymbolDicts()
 
 
@@ -18,47 +14,58 @@ def HideVerbPersons():
 
 def ShowAppropriateEntries(master_window):
     word_type = getEnglishWordCategory()
-    if word_type == "noun":
+    if word_type == "noun" and taughtLanguage == 'french':
         # Show
         categorySpecificFrame.grid(row=4, column=1, columnspan=2, sticky=E + W, pady=frameAwayFromBorderY / 2)
-        frenchGenderLabel.grid(row=0, column=0)
-        frenchGender.grid(row=0, column=1)
-        frenchGender.config(width=10)
+        foreignGenderLabel.grid(row=0, column=0)
+        foreignGender.grid(row=0, column=1)
+        foreignGender.config(width=10)
         # Hide
         verbSingularLabel.grid_forget()
         verbPluralLabel.grid_forget()
         HideVerbPersons()
     elif word_type == "verb":
         # Show
-        categorySpecificFrame.grid(row=4, column=1, sticky=E + W, pady=frameAwayFromBorderY / 2)
-        verbSingularLabel.grid(row=0, column=1)
-        firstPersonLabel.grid(row=1, column=0)
-        firstPersonEntry.grid(row=1, column=1, padx=15, pady=2)
-        secondPersonLabel.grid(row=2, column=0)
-        secondPersonEntry.grid(row=2, column=1, padx=15, pady=2)
-        thirdPersonLabel.grid(row=3, column=0)
-        thirdPersonEntry.grid(row=3, column=1, padx=15, pady=2)
-        verbPluralLabel.grid(row=0, column=2)
-        fourthPersonEntry.grid(row=1, column=2)
-        fifthPersonEntry.grid(row=2, column=2)
-        sixthPersonEntry.grid(row=3, column=2)
-        # Hide
-        frenchGenderLabel.grid_forget()
-        frenchGender.grid_forget()
-        nounGender.set('-')
+        if taughtLanguage == 'french':
+            categorySpecificFrame.grid(row=4, column=1, sticky=E + W, pady=frameAwayFromBorderY / 2)
+            verbSingularLabel.grid(row=0, column=1)
+            verbPluralLabel.grid(row=0, column=2)
+            firstPersonLabel.grid(row=1, column=0)
+            firstPersonEntry.grid(row=1, column=1, padx=15, pady=2)
+            secondPersonLabel.grid(row=2, column=0)
+            secondPersonEntry.grid(row=2, column=1, padx=15, pady=2)
+            thirdPersonLabel.grid(row=3, column=0)
+            thirdPersonEntry.grid(row=3, column=1, padx=15, pady=2)
+            fourthPersonEntry.grid(row=1, column=2)
+            fifthPersonEntry.grid(row=2, column=2)
+            sixthPersonEntry.grid(row=3, column=2)
+            # Hide
+            foreignGenderLabel.grid_forget()
+            foreignGender.grid_forget()
+            nounGender.set('-')
+        elif taughtLanguage == 'english':
+            categorySpecificFrame.grid(row=4, column=1, columnspan=2, sticky=E + W, pady=frameAwayFromBorderY / 2)
+            firstPersonLabel.grid(row=1, column=0)
+            firstPersonEntry.grid(row=2, column=0, padx=3, pady=2)
+            secondPersonLabel.grid(row=1, column=1)
+            secondPersonEntry.grid(row=2, column=1, padx=3, pady=2)
+            thirdPersonLabel.grid(row=1, column=2)
+            thirdPersonEntry.grid(row=2, column=2, padx=3, pady=2)
+
     else:
         # Hide
-        frenchGenderLabel.grid_forget()
-        frenchGender.grid_forget()
-        nounGender.set('-')
+        if taughtLanguage == 'french':
+            foreignGenderLabel.grid_forget()
+            foreignGender.grid_forget()
+            nounGender.set('-')
         verbSingularLabel.grid_forget()
         verbPluralLabel.grid_forget()
         categorySpecificFrame.grid_forget()
         HideVerbPersons()
 
 
-def checkIfPolishAndFrenchWordsFilled():
-    if (len(getPolishWord()) > 0) & (len(getFrenchWord()) > 0):
+def checkIfPolishAndForeignWordsFilled():
+    if (len(getPolishWord()) > 0) & (len(getForeignWord()) > 0):
         return True
     return False
 
@@ -83,7 +90,7 @@ def selectFoundWord(window_to_close, text):
     else:
         database = 'verbs'
     oid = words[1][:-1]
-    connection = sqlite3.connect(frenchDatabase)
+    connection = sqlite3.connect(foreignDatabase)
     cursor = connection.cursor()
     cursor.execute(f"SELECT * FROM {database} WHERE oid == {oid}")
     result = list(cursor.fetchmany(1)[0])
@@ -91,19 +98,19 @@ def selectFoundWord(window_to_close, text):
         if result[i] is None:
             result[i] = ''
     polishWord.set(replaceSymbolsInString(result[0], strange_symbols))
-    frenchWord.set(replaceSymbolsInString(result[1], strange_symbols))
+    foreignWord.set(replaceSymbolsInString(result[1], strange_symbols))
     tag_index = 0
     for i in range(len(tagsValueList), 0, -1):
         tagsValueList[tag_index].set(replaceSymbolsInString(result[-i], strange_symbols))
         tag_index += 1
-    if language.get() == 'polish':
+    if guiLanguage.get() == 'polish':
         wordDifficulty.set(english_polish_dictionary[result[-len(tagsValueList) - 1]])
         wordCategory.set(english_polish_dictionary[database[:-1]])
     else:
         wordDifficulty.set(result[-len(tagsValueList) - 1])
         wordCategory.set(database[:-1])
     ShowAppropriateEntries(master)
-    if database == 'nouns':
+    if database == 'nouns' and taughtLanguage == 'french':
         nounGender.set(english_polish_dictionary[result[2]])
     elif database == 'verbs':
         i = 2
@@ -112,6 +119,8 @@ def selectFoundWord(window_to_close, text):
             i += 1
     connection.commit()
     connection.close()
+    availableTagsList.set('')
+    polishWordEntry.focus()
     window_to_close.destroy()
 
 
@@ -141,9 +150,9 @@ def getPolishWord():
     return replaceSymbolsInString(polish_word, normal_symbols)
 
 
-def getFrenchWord():
-    french_word = frenchWordEntry.get().lower().strip()
-    return replaceSymbolsInString(french_word, normal_symbols)
+def getForeignWord():
+    foreign_word = foreignWordEntry.get().lower().strip()
+    return replaceSymbolsInString(foreign_word, normal_symbols)
 
 
 def buildQuery(function='find', target_database='basics'):
@@ -152,7 +161,7 @@ def buildQuery(function='find', target_database='basics'):
     database = word_category + "s"
     query_parts = []
     select_query_part = f'SELECT * FROM {database}'
-    where_query_part = f' WHERE {names[0]} = \'{getPolishWord()}\' AND {names[1]} = \'{getFrenchWord()}\';'
+    where_query_part = f' WHERE {names[0]} = \'{getPolishWord()}\' AND {names[1]} = \'{getForeignWord()}\';'
     query_parts.append(select_query_part)
     query_parts.append(where_query_part)
     if function == 'find':
@@ -162,23 +171,23 @@ def buildQuery(function='find', target_database='basics'):
         tag_words = createTagWordsList(tagsValueList, normal_symbols)
         noun_gender = getEnglishNounGender()
         if (wordDifficulty.get() != '-') | (len(tag_words) > 0) | (len(getPolishWord()) > 0) | (
-                len(getFrenchWord()) > 0) | (word_category == 'noun' and noun_gender != '-'):
+                len(getForeignWord()) > 0) | (word_category == 'noun' and noun_gender != '-'):
             find_query += ' WHERE '
         no_conditions = 0
         # query condition for names
-        if checkIfPolishAndFrenchWordsFilled():
-            find_query += f'({names[0]}==\'{getPolishWord()}\' AND {names[1]}==\'{getFrenchWord()}\')'
+        if checkIfPolishAndForeignWordsFilled():
+            find_query += f'({names[0]}==\'{getPolishWord()}\' AND {names[1]}==\'{getForeignWord()}\')'
             no_conditions += 1
-        elif (len(getPolishWord()) > 0) | (len(getFrenchWord()) > 0):
-            find_query += f'({names[0]}==\'{getPolishWord()}\' OR {names[1]}==\'{getFrenchWord()}\')'
+        elif (len(getPolishWord()) > 0) | (len(getForeignWord()) > 0):
+            find_query += f'({names[0]}==\'{getPolishWord()}\' OR {names[1]}==\'{getForeignWord()}\')'
             no_conditions += 1
         # query condition for tags
         if len(tag_words) > 0:
             find_query, no_conditions = addTagsToQuery(no_conditions, find_query, tag_words)
-        if word_category == 'noun' and noun_gender != '-':
+        if word_category == 'noun' and taughtLanguage == 'french' and noun_gender != '-':
             if no_conditions > 0:
                 find_query += ' AND '
-            find_query += f'french_gender == \'{getEnglishNounGender()}\''
+            find_query += f'{taughtLanguage}_gender == \'{getEnglishNounGender()}\''
             no_conditions += 1
         if wordDifficulty.get() != '-':
             if no_conditions > 0:
@@ -195,7 +204,7 @@ def buildQuery(function='find', target_database='basics'):
 
 def packWordsFoundInTable(window, window_to_close, table_name, result):
     text = table_name.upper() + 'S'
-    if language.get() == 'polish':
+    if guiLanguage.get() == 'polish':
         text = english_polish_dictionary[table_name].upper() + 'I'
     if table_name in ['basic']:
         text = text[:-1]
@@ -219,12 +228,13 @@ def packWordsFoundInTable(window, window_to_close, table_name, result):
 
 
 def findWord():
-    connection = sqlite3.connect(frenchDatabase)
+    connection = sqlite3.connect(foreignDatabase)
     cursor = connection.cursor()
     word_category = getEnglishWordCategory()
     if word_category != 'all':
         select_query, where_query, find_query = buildQuery('find')
-        cursor.execute(select_query)
+        # cursor.execute(select_query)
+        print(find_query)
         cursor.execute(find_query)
         result = [cursor.fetchall()]
         result_categories = [word_category]
@@ -238,6 +248,7 @@ def findWord():
         for category in validWordCategoryList:
             select_query, where_query, find_query = buildQuery('find', category + 's')
             cursor.execute(find_query)
+            print(find_query)
             temp_result = cursor.fetchall()
             temp_len = len(temp_result)
             if temp_len > 0:
@@ -321,7 +332,7 @@ def findTableColumnNames(target_database='basics'):
         database = word_category + "s"
     else:
         database = target_database
-    connection = sqlite3.connect(frenchDatabase)
+    connection = sqlite3.connect(foreignDatabase)
     cursor = connection.cursor()
     cursor.execute(f'select * from {database} LIMIT 1;')
     names = [description[0] for description in cursor.description]
@@ -342,30 +353,30 @@ def addWord():
     if word_category == "all":
         messagebox.showwarning("missing data", "You NEED to select one of the available WORD CATEGORY!")
         return None
-    if checkIfPolishAndFrenchWordsFilled():
+    if checkIfPolishAndForeignWordsFilled():
         database = word_category + "s"
-        connection = sqlite3.connect(frenchDatabase)
+        connection = sqlite3.connect(foreignDatabase)
         cursor = connection.cursor()
         result = cursor.execute(f'select * from {database} LIMIT 1;')
         names = [description[0] for description in result.description]
         query = f"INSERT INTO {database} VALUES (:{', :'.join(names)})"
     else:
-        messagebox.showwarning("missing data", "You NEED to fill POLISH AND FRENCH WORD entries!")
+        messagebox.showwarning("missing data", f"You NEED to fill POLISH AND {taughtLanguage.upper()} WORD entries!")
         return None
     new_polish_word = getPolishWord()
-    new_french_word = getFrenchWord()
+    new_foreign_word = getForeignWord()
     if word_category == 'basic':
         query_dictionary = {f'polish_word': new_polish_word,
-                            f'french_word': new_french_word}
+                            f'{taughtLanguage}_word': new_foreign_word}
     else:
         query_dictionary = {f'polish_{word_category}': new_polish_word,
-                            f'french_{word_category}': new_french_word}
+                            f'{taughtLanguage}_{word_category}': new_foreign_word}
     if word_category == "noun":
         gender = getEnglishNounGender()
         if gender == '-':
             messagebox.showwarning("missing data", "You NEED to specify GENDER of the noun!")
             return
-        query_dictionary['french_gender'] = gender
+        query_dictionary[f'{taughtLanguage}_gender'] = gender
     elif word_category == "verb":
         for i in range(len(verbEntryList)):
             verb_value = verbEntryList[i].get().lower().strip()
@@ -400,21 +411,21 @@ def changeWord():
     if word_category == "all":
         messagebox.showwarning("missing data", "You NEED to select one of the available WORD CATEGORY!")
         return
-    if checkIfPolishAndFrenchWordsFilled():
+    if checkIfPolishAndForeignWordsFilled():
         select_query_part, where_query_part, update_query_part = buildQuery('change')
     else:
-        messagebox.showwarning("missing data", "You NEED to fill POLISH AND FRENCH WORD entries!")
+        messagebox.showwarning("missing data", f"You NEED to fill POLISH AND {taughtLanguage.upper()} WORD entries!")
         return
     find_query = select_query_part + where_query_part
-    connection = sqlite3.connect(frenchDatabase)
+    connection = sqlite3.connect(foreignDatabase)
     cursor = connection.cursor()
     cursor.execute(find_query)
     if len(cursor.execute(find_query).fetchall()) == 0:
         messagebox.showwarning('No words found', 'There are no desired words in the database')
         return
     middle_parts = []
-    if word_category == "noun":
-        middle_parts.append(f'french_gender = \'{getEnglishNounGender()}\'')
+    if word_category == "noun" and taughtLanguage == 'french':
+        middle_parts.append(f'{taughtLanguage}_gender = \'{getEnglishNounGender()}\'')
     elif word_category == "verb":
         for i in range(len(verbEntryList)):
             conjugated_verb = verbEntryList[i].get().lower().strip()
@@ -436,6 +447,7 @@ def changeWord():
     cursor.execute(update_query)
     connection.commit()
     connection.close()
+    availableTagsList.set('')
     messagebox.showinfo('Success', 'Record successfully changed')
 
 
@@ -443,9 +455,9 @@ def removeWord():
     if getEnglishWordCategory() == "all":
         messagebox.showwarning("missing data", "You NEED to select one of the available WORD CATEGORY!")
         return
-    if checkIfPolishAndFrenchWordsFilled():
+    if checkIfPolishAndForeignWordsFilled():
         select_query_part, where_query_part, delete_query = buildQuery('delete')
-        connection = sqlite3.connect(frenchDatabase)
+        connection = sqlite3.connect(foreignDatabase)
         cursor = connection.cursor()
         if len(cursor.execute(select_query_part + where_query_part).fetchall()) == 0:
             messagebox.showwarning('No words found', 'There are no desired words in the database')
@@ -456,7 +468,7 @@ def removeWord():
         clearMainScreen()
         messagebox.showinfo('Success', 'Record successfully removed from the table')
     else:
-        messagebox.showwarning("missing data", "You NEED to fill POLISH AND FRENCH WORD entries!")
+        messagebox.showwarning("missing data", f"You NEED to fill POLISH AND {taughtLanguage.upper()} WORD entries!")
         return
 
 
@@ -464,16 +476,17 @@ def clearMainScreen(start=False):
     for tag in tagsValueList:
         tag.set('')
     polishWord.set('')
-    frenchWord.set('')
+    foreignWord.set('')
     for person in personsList:
         person.set('')
     wordDifficulty.set("-")
     if start:
-        if language.get() == 'polish':
+        if guiLanguage.get() == 'polish':
             wordCategory.set("wszystko")
         else:
             wordCategory.set("all")
     nounGender.set("-")
+    availableTagsList.set('')
     polishWordEntry.focus()
 
 
@@ -504,22 +517,27 @@ def disableEntriesAndDropdown():
 
 
 def adjustToLanguage():
-    if language.get() == 'english':
-        mainFrameWidthModifier.set(1)
+    if guiLanguage.get() == 'english':
         labelFramePadX.set(111)
         wordCategory.set('all')
         appMainLabelText.set('Tool for words management')
         changeLanguageText.set('Change language')
         categoryLabelText.set('Word category')
         polishWordLabelText1.set('Polish word')
-        frenchWordLabelText1.set('French word')
         wordDifficultyLabelText1.set('Word difficulty')
         tagsLabelText.set('Tags')
         strictTagsLabelText.set('Strict tags')
-        frenchNounGenderLabelText.set('French noun gender')
-        firstPersonLabelText.set('1st person')
-        secondPersonLabelText.set('2nd person')
-        thirdPersonLabelText.set('3rd person')
+        foreignNounGenderLabelText.set('French noun gender')
+        if taughtLanguage == 'french':
+            foreignWordLabelText1.set('French word')
+            firstPersonLabelText.set('1st person')
+            secondPersonLabelText.set('2nd person')
+            thirdPersonLabelText.set('3rd person')
+        elif taughtLanguage == 'english':
+            foreignWordLabelText1.set('English word')
+            firstPersonLabelText.set('1st form \n(infinitive)')
+            secondPersonLabelText.set('2nd form \n(past tense)')
+            thirdPersonLabelText.set('3rd form \n(past participle)')
         singularLabelText.set('Singular')
         pluralLabelText.set('Plural')
         addLabelText.set('Add')
@@ -529,20 +547,25 @@ def adjustToLanguage():
         clearAllLabelText.set('Clear all')
         how_many_gender_button_times.set(2)
     else:
-        mainFrameWidthModifier.set(0.8)
         labelFramePadX.set(22)
         how_many_gender_button_times.set(4)
         wordCategory.set('wszystko')
         categoryLabelText.set('Kategoria słowa')
         polishWordLabelText1.set('Polskie słowo')
-        frenchWordLabelText1.set('Francuskie słowo')
         wordDifficultyLabelText1.set('Trudność słowa')
         tagsLabelText.set('Tagi')
         strictTagsLabelText.set('Dokładne tagi')
-        frenchNounGenderLabelText.set('Płeć francuskiego rzeczownika')
-        firstPersonLabelText.set('1st osoba')
-        secondPersonLabelText.set('2nd osoba')
-        thirdPersonLabelText.set('3rd osoba')
+        foreignNounGenderLabelText.set('Płeć francuskiego rzeczownika')
+        if taughtLanguage == 'french':
+            foreignWordLabelText1.set('Francuskie słowo')
+            firstPersonLabelText.set('1st osoba')
+            secondPersonLabelText.set('2nd osoba')
+            thirdPersonLabelText.set('3rd osoba')
+        elif taughtLanguage == 'english':
+            foreignWordLabelText1.set('Angielskie słowo')
+            firstPersonLabelText.set('1 forma \n(infinitive)')
+            secondPersonLabelText.set('2 forma \n(past tense)')
+            thirdPersonLabelText.set('3 forma \n(past participle)')
         singularLabelText.set('L. pojedyncza')
         pluralLabelText.set('L. mnoga')
         addLabelText.set('Dodaj')
@@ -556,129 +579,110 @@ def adjustToLanguage():
 
 def openMenu():
     master.destroy()
-    os.system('python french_learning.py')
+    os.system('python foreign_language_learning.py')
 
 
 def prepareAvailableTagsList():
-    tag_lists = createAvailableLabelsList(validWordCategoryList, tagsValueList)
+    tag_lists = createAvailableLabelsList(validWordCategoryList, tagsValueList, taughtLanguage)
     if None in tag_lists:
         tag_lists.remove(None)
     tag_lists.sort()
     return tag_lists
 
 
+taughtLanguage = readTaughtLanguageFromFile()
+projectDirectory, foreignDatabase = loadDirectories(taughtLanguage)
+
+if not os.path.isfile(foreignDatabase):
+    os.system(f'python create_{taughtLanguage}_database.py')
+
 master = Tk()
-master.title("French words database")
 frameAwayFromBorderY = 10
 master.config(bg='#D2DEE6')
+if taughtLanguage == 'french':
+    image = projectDirectory / "images/french_flag_database.png"
+    title = 'French words database'
+elif taughtLanguage == 'english':
+    image = projectDirectory / "images/english_flag_database.png"
+    title = 'English words database'
+master.title(title)
 photo = PhotoImage(file=image)
 master.iconphoto(True, photo)
 
 how_many_gender_button_times = IntVar()
-englishWordCategoryList = ['all', 'basic', 'noun', 'verb', 'adjective']
-polishWordCategoryList = ['wszystko', 'podstawowe', 'rzeczownik', 'czasownik', 'przymiotnik']
-validWordCategoryList = ['basic', 'noun', 'verb', 'adjective']
-wordCategoryList = []
-wordCategory = StringVar()
-englishWordDifficultyList = ['-', 'easy', 'medium', 'hard']
-polishWordDifficultyList = ['-', 'łatwe', 'średnie', 'trudne']
-wordDifficultyList = []
-wordDifficulty = StringVar()
-nounGenderList = ['-', 'masculine', 'feminine']
-polishNounGenderList = ['-', 'męska', 'żeńska']
-nounGender = StringVar()
+guiLanguage = StringVar()
+guiLanguage.set(readLanguageFromFile())
+labelFramePadX = IntVar()
+# only one lang version uses that
+labelFramePadX.set(22)
+
+englishWordCategoryList, polishWordCategoryList, validWordCategoryList, englishWordDifficultyList, \
+    polishWordDifficultyList, wordDifficulty, englishNounGenderList, polishNounGenderList, nounGender = generateBasics()
 
 english_polish_dictionary, polish_english_dictionary, allList, basicList, verbList, nounList, adjectiveList = \
     generateDictionariesAndLanLists()
 
-tag1 = StringVar()
-tag2 = StringVar()
-tag3 = StringVar()
-tag4 = StringVar()
-tag5 = StringVar()
-tag6 = StringVar()
-tagsValueList = [tag1, tag2, tag3, tag4, tag5, tag6]
-polishWord = StringVar()
-frenchWord = StringVar()
-firstPerson = StringVar()
-secondPerson = StringVar()
-thirdPerson = StringVar()
-fourthPerson = StringVar()
-fifthPerson = StringVar()
-sixthPerson = StringVar()
-personsList = [firstPerson, secondPerson, thirdPerson, fourthPerson, fifthPerson, sixthPerson]
-language = StringVar()
-language.set(readLanguageFromFile())
-if language.get() == 'english':
-    wordDifficultyList = englishWordDifficultyList
-    wordCategoryList = englishWordCategoryList
-else:
-    wordDifficultyList = polishWordDifficultyList
-    wordCategoryList = polishWordCategoryList
-wordCategory.set(wordCategoryList[0])
+tag1, tag2, tag3, tag4, tag5, tag6, tagsValueList = generateTagVariables()
 
-appMainLabelText = StringVar()
-changeLanguageText = StringVar()
-categoryLabelText = StringVar()
-polishWordLabelText1 = StringVar()
-frenchWordLabelText1 = StringVar()
-wordDifficultyLabelText1 = StringVar()
-tagsLabelText = StringVar()
-strictTagsLabelText = StringVar()
-frenchNounGenderLabelText = StringVar()
-firstPersonLabelText = StringVar()
-secondPersonLabelText = StringVar()
-thirdPersonLabelText = StringVar()
-singularLabelText = StringVar()
-pluralLabelText = StringVar()
-addLabelText = StringVar()
-findLabelText = StringVar()
-modifyLabelText = StringVar()
-deleteLabelText = StringVar()
-clearAllLabelText = StringVar()
-labelTextsList = [categoryLabelText, polishWordLabelText1, frenchWordLabelText1, wordDifficultyLabelText1,
+if taughtLanguage == 'french':
+    polishWord, foreignWord, firstPerson, secondPerson, thirdPerson, \
+        fourthPerson, fifthPerson, sixthPerson, personsList = generateEntryVariables(taughtLanguage)
+elif taughtLanguage == 'english':
+    polishWord, foreignWord, firstPerson, secondPerson, thirdPerson, personsList = generateEntryVariables(taughtLanguage)
+
+wordDifficultyList, wordCategoryList, wordCategory = \
+    generateDropDownLists(guiLanguage.get(), englishWordDifficultyList, polishWordDifficultyList,
+                          englishWordCategoryList, polishWordCategoryList)
+
+appMainLabelText, changeLanguageText, categoryLabelText, polishWordLabelText1, foreignWordLabelText1, \
+    wordDifficultyLabelText1, tagsLabelText, strictTagsLabelText, foreignNounGenderLabelText, firstPersonLabelText, \
+    secondPersonLabelText, thirdPersonLabelText, singularLabelText, pluralLabelText, addLabelText, findLabelText, \
+    modifyLabelText, deleteLabelText, clearAllLabelText = generateLabelTexts()
+
+labelTextsList = [categoryLabelText, polishWordLabelText1, foreignWordLabelText1, wordDifficultyLabelText1,
                   tagsLabelText,
-                  strictTagsLabelText, frenchNounGenderLabelText, firstPersonLabelText, secondPersonLabelText,
+                  strictTagsLabelText, foreignNounGenderLabelText, firstPersonLabelText, secondPersonLabelText,
                   thirdPersonLabelText, singularLabelText, pluralLabelText, addLabelText, findLabelText,
                   modifyLabelText, deleteLabelText, clearAllLabelText, appMainLabelText, changeLanguageText]
-mainFrameWidthModifier = DoubleVar()
-labelFramePadX = IntVar()
-# only one lang version uses that
-labelFramePadX.set(22)
-mainFrameWidthModifier.set(0.8)
 
-# App label
-Label(master, textvariable=appMainLabelText, font=("Arial", 20), bg='#D2DEE6').grid(row=0, column=1, ipadx=10, ipady=5)
-Label(master, text='', font=("Arial", 20), bg='#D2DEE6').grid(row=0, column=0, ipadx=10, ipady=5)
-Label(master, text='', font=("Arial", 20), bg='#D2DEE6').grid(row=0, column=3, ipadx=10, ipady=5)
+putMainLabels(master, appMainLabelText)
 
-# Main frame
-mainFrame = LabelFrame(master, padx=30, pady=2)
-mainFrame.grid(row=2, column=1, columnspan=2, ipady=5, sticky=E + W, pady=frameAwayFromBorderY)
-# Main frame
-wordEntryWidth = 60
-wordEntrySpan = 4
-wordCategoryDropListLabel = Label(mainFrame, textvariable=categoryLabelText, pady=8)
-wordCategoryDropListLabel.grid(row=0, column=0)
-wordCategoryDropList = OptionMenu(mainFrame, wordCategory, *wordCategoryList, command=ShowAppropriateEntries)
-wordCategoryDropList.grid(row=0, column=1, ipadx=12)
-wordCategoryDropList.config(width=7)
 
-polishWordLabelText = Label(mainFrame, textvariable=polishWordLabelText1, pady=3)
-polishWordLabelText.grid(row=1, column=0)
-polishWordEntry = Entry(mainFrame, width=wordEntryWidth, textvariable=polishWord)
-polishWordEntry.grid(row=1, columnspan=wordEntrySpan, column=1)
-frenchWordLabelText = Label(mainFrame, textvariable=frenchWordLabelText1, pady=6)
-frenchWordLabelText.grid(row=2, column=0)
-frenchWordEntry = Entry(mainFrame, width=wordEntryWidth, textvariable=frenchWord)
-frenchWordEntry.grid(row=2, columnspan=wordEntrySpan, column=1)
+def DeployMainFrame():
+    main_frame = LabelFrame(master, padx=30, pady=2)
+    main_frame.grid(row=2, column=1, columnspan=2, ipady=5, sticky=E + W, pady=frameAwayFromBorderY)
+    word_entry_width = 60
+    word_entry_span = 4
 
-wordDifficultyLabelText = Label(mainFrame, textvariable=wordDifficultyLabelText1, pady=8)
-wordDifficultyLabelText.grid(row=0, column=3)
-wordDifficultyDropList = OptionMenu(mainFrame, wordDifficulty, *wordDifficultyList)
-wordDifficultyDropList.grid(row=0, column=4, ipadx=12)
-wordDifficultyDropList.config(width=7)
+    word_category_drop_list_label = Label(main_frame, textvariable=categoryLabelText, pady=8)
+    word_category_drop_list_label.grid(row=0, column=0)
+    word_category_drop_list = OptionMenu(main_frame, wordCategory, *wordCategoryList, command=ShowAppropriateEntries)
+    word_category_drop_list.grid(row=0, column=1, ipadx=12)
+    word_category_drop_list.config(width=7)
 
+    word_difficulty_drop_list_label = Label(main_frame, textvariable=wordDifficultyLabelText1, pady=8)
+    word_difficulty_drop_list_label.grid(row=0, column=3)
+    word_difficulty_drop_list = OptionMenu(main_frame, wordDifficulty, *wordDifficultyList)
+    word_difficulty_drop_list.grid(row=0, column=4, ipadx=12)
+    word_difficulty_drop_list.config(width=7)
+
+    polish_word_label = Label(main_frame, textvariable=polishWordLabelText1, pady=3)
+    polish_word_label.grid(row=1, column=0)
+    polish_word_entry = Entry(main_frame, width=word_entry_width, textvariable=polishWord)
+    polish_word_entry.grid(row=1, columnspan=word_entry_span, column=1)
+
+    foreign_word_label = Label(main_frame, textvariable=foreignWordLabelText1, pady=6)
+    foreign_word_label.grid(row=2, column=0)
+    foreign_word_entry = Entry(main_frame, width=word_entry_width, textvariable=foreignWord)
+    foreign_word_entry.grid(row=2, columnspan=word_entry_span, column=1)
+
+    return main_frame, word_category_drop_list_label, word_category_drop_list, word_difficulty_drop_list_label, \
+        word_difficulty_drop_list, polish_word_label, polish_word_entry, foreign_word_label,\
+        foreign_word_entry
+
+
+mainFrame, wordCategoryDropListLabel, wordCategoryDropList, wordDifficultyDropListLabel, wordDifficultyDropList,\
+        polishWordLabel, polishWordEntry, foreignWordLabel, foreignWordEntry = DeployMainFrame()
 availableLabels = prepareAvailableTagsList()
 
 # Labels frame
@@ -706,6 +710,7 @@ strictTagsValue = IntVar()
 strictTagsCheckbox = Checkbutton(labelsFrame, textvariable=strictTagsLabelText, variable=strictTagsValue, bg='#EBEBD2')
 strictTagsCheckbox.grid(row=2, column=1)
 
+
 # tag combobox
 
 
@@ -732,29 +737,39 @@ availableTagsList.bind("<<ComboboxSelected>>", tagSelected)
 categorySpecificFrame = LabelFrame(master, padx=labelFramePadX.get(), pady=2, bg='#F0D3AC')
 
 # Noun specific labels and entries
-frenchGenderLabel = Label(categorySpecificFrame, textvariable=frenchNounGenderLabelText, bg='#F0D3AC')
-frenchGender = OptionMenu(categorySpecificFrame, nounGender, *polishNounGenderList)
+foreignGenderLabel = Label(categorySpecificFrame, textvariable=foreignNounGenderLabelText, bg='#F0D3AC')
+foreignGender = OptionMenu(categorySpecificFrame, nounGender, *polishNounGenderList)
 # Verb specific labels and entries
-db_verb_list = ['first_person', 'second_person', 'third_person',
-                'fourth_person', 'fifth_person', 'sixth_person']
+if taughtLanguage == 'french':
+    db_verb_list = ['first_person', 'second_person', 'third_person',
+                    'fourth_person', 'fifth_person', 'sixth_person']
+elif taughtLanguage == 'english':
+    db_verb_list = ['first_form', 'second_form', 'third_form']
+
 personEntryWidth = 25
+
 firstPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText, bg='#F0D3AC')
 firstPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=firstPerson)
 secondPersonLabel = Label(categorySpecificFrame, textvariable=secondPersonLabelText, bg='#F0D3AC')
 secondPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=secondPerson)
 thirdPersonLabel = Label(categorySpecificFrame, textvariable=thirdPersonLabelText, bg='#F0D3AC')
 thirdPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=thirdPerson)
-fourthPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText)
-fourthPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=fourthPerson)
-fifthPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText)
-fifthPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=fifthPerson)
-sixthPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText)
-sixthPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=sixthPerson)
-verbLabelsList = [firstPersonLabel, secondPersonLabel, thirdPersonLabel,
-                  fourthPersonLabel, fifthPersonLabel, sixthPersonLabel]
-verbEntryList = [firstPersonEntry, secondPersonEntry, thirdPersonEntry,
-                 fourthPersonEntry, fifthPersonEntry, sixthPersonEntry]
-verbVariableList = [firstPerson, secondPerson, thirdPerson, fourthPerson, fifthPerson, sixthPerson]
+if taughtLanguage == 'french':
+    fourthPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText)
+    fourthPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=fourthPerson)
+    fifthPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText)
+    fifthPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=fifthPerson)
+    sixthPersonLabel = Label(categorySpecificFrame, textvariable=firstPersonLabelText)
+    sixthPersonEntry = Entry(categorySpecificFrame, width=personEntryWidth, textvariable=sixthPerson)
+    verbLabelsList = [firstPersonLabel, secondPersonLabel, thirdPersonLabel,
+                      fourthPersonLabel, fifthPersonLabel, sixthPersonLabel]
+    verbEntryList = [firstPersonEntry, secondPersonEntry, thirdPersonEntry,
+                     fourthPersonEntry, fifthPersonEntry, sixthPersonEntry]
+    verbVariableList = [firstPerson, secondPerson, thirdPerson, fourthPerson, fifthPerson, sixthPerson]
+elif taughtLanguage == 'english':
+    verbLabelsList = [firstPersonLabel, secondPersonLabel, thirdPersonLabel]
+    verbEntryList = [firstPersonEntry, secondPersonEntry, thirdPersonEntry]
+    verbVariableList = [firstPerson, secondPerson, thirdPerson]
 verbSingularLabel = Label(categorySpecificFrame, textvariable=singularLabelText, bg='#F0D3AC')
 verbPluralLabel = Label(categorySpecificFrame, textvariable=pluralLabelText, bg='#F0D3AC')
 
@@ -786,10 +801,14 @@ menuButton = Button(master, text="MENU", width=12, pady=2, command=openMenu, bg=
 menuButton.grid(row=0, column=2)
 
 buttonsList = [addWordButton, findWordButton, changeWordButton, removeWordButton, clearEntriesButton, menuButton]
-entriesList = [polishWordEntry, frenchWordEntry, firstPersonEntry, secondPersonEntry,
-               thirdPersonEntry, fourthPersonEntry, fifthPersonEntry, sixthPersonEntry,
-               wordTag1Entry, wordTag2Entry, wordTag3Entry, wordTag4Entry, wordTag5Entry, wordTag6Entry]
-dropdownsList = [wordCategoryDropList, wordDifficultyDropList, frenchGender]
+if taughtLanguage == 'french':
+    entriesList = [polishWordEntry, foreignWordEntry, firstPersonEntry, secondPersonEntry,
+                   thirdPersonEntry, fourthPersonEntry, fifthPersonEntry, sixthPersonEntry,
+                   wordTag1Entry, wordTag2Entry, wordTag3Entry, wordTag4Entry, wordTag5Entry, wordTag6Entry]
+elif taughtLanguage == 'english':
+    entriesList = [polishWordEntry, foreignWordEntry, firstPersonEntry, secondPersonEntry, thirdPersonEntry,
+                   wordTag1Entry, wordTag2Entry, wordTag3Entry, wordTag4Entry, wordTag5Entry, wordTag6Entry]
+dropdownsList = [wordCategoryDropList, wordDifficultyDropList, foreignGender]
 
 # master.geometry(f"680x200")
 adjustToLanguage()

@@ -7,8 +7,16 @@ import random
 import os
 
 
-projectDirectory, frenchDatabase = loadDirectories()
-image = projectDirectory / "images/french_flag.png"
+taughtLanguage = readTaughtLanguageFromFile()
+projectDirectory, foreignDatabase = loadDirectories(taughtLanguage)
+
+if not os.path.isfile(foreignDatabase):
+    os.system(f'python create_{taughtLanguage}_database.py')
+
+if taughtLanguage == 'french':
+    image = projectDirectory / "images/french_flag.png"
+elif taughtLanguage == 'english':
+    image = projectDirectory / "images/english_flag.png"
 appSettings = projectDirectory / "settings.txt"
 normal_symbols, strange_symbols = generateNormalAndStrangeSymbolDicts()
 
@@ -48,7 +56,12 @@ def readSettingsFromFile():
     i = 0
     for line in data:
         value = line.split(' ')[-1].split('\n')[0]
-        settings[i].set(value)
+        # everything is StringVar
+        if i != 1:
+            settings[i].set(value)
+        # except for taughtLanguage
+        else:
+            settings[i] = value
         i += 1
     formatTime()
     file.close()
@@ -62,21 +75,21 @@ def SaveTime(window):
         return
     with open(appSettings, "r") as file:
         data = file.readlines()
-    data[1] = 'hours = '
+    data[2] = 'hours = '
     if len(newHours.get()) == 0:
-        data[1] += '0\n'
-    else:
-        data[1] += f'{newHours.get()}\n'
-    data[2] = 'minutes = '
-    if len(newMinutes.get()) == 0:
         data[2] += '0\n'
     else:
-        data[2] += f'{newMinutes.get()}\n'
-    data[3] = 'seconds = '
-    if len(newSeconds.get()) == 0:
+        data[2] += f'{newHours.get()}\n'
+    data[3] = 'minutes = '
+    if len(newMinutes.get()) == 0:
         data[3] += '0\n'
     else:
-        data[3] += f'{newSeconds.get()}\n'
+        data[3] += f'{newMinutes.get()}\n'
+    data[4] = 'seconds = '
+    if len(newSeconds.get()) == 0:
+        data[4] += '0\n'
+    else:
+        data[4] += f'{newSeconds.get()}\n'
     with open(appSettings, 'w') as file:
         file.writelines(data)
     readSettingsFromFile()
@@ -134,16 +147,16 @@ def saveWordsSettings(window):
     else:
         with open(appSettings, "r") as file:
             data = file.readlines()
-        data[4] = f'category = {newCategory.get()}\n'
-        data[5] = f'difficulty = {newDifficulty.get()}\n'
-        data[6] = f'strict_tags = {newStrictTags.get()}\n'
+        data[5] = f'category = {newCategory.get()}\n'
+        data[6] = f'difficulty = {newDifficulty.get()}\n'
+        data[7] = f'strict_tags = {newStrictTags.get()}\n'
         tags_number = len(newTagsList)
         for i in range(tags_number):
             if i < tags_number - 1:
                 addition = '\n'
             else:
                 addition = ''
-            data[7 + i] = f'tag{i + 1} = {newTagsList[i].get()}{addition}'
+            data[8 + i] = f'tag{i + 1} = {newTagsList[i].get()}{addition}'
         with open(appSettings, 'w') as file:
             file.writelines(data)
         readSettingsFromFile()
@@ -272,7 +285,7 @@ def availableWords(target_database='all'):
             select_query += ' AND '
         select_query += f'difficulty == \'{getEnglishDifficulty():}\''
     select_query += ';'
-    connection = sqlite3.connect(frenchDatabase)
+    connection = sqlite3.connect(foreignDatabase)
     cursor = connection.cursor()
     available_words_list = []
     if database != 'all':
@@ -454,7 +467,7 @@ def adjustToLanguage():
 
 def openMenu():
     master.destroy()
-    os.system('python french_learning.py')
+    os.system('python foreign_language_learning.py')
 
 
 master = Tk()
@@ -546,12 +559,14 @@ labelsTextList = ['Verb conjugation', 'Word \ndetails', 'Reset settings', 'Save 
                   'Plural', '1st person', '2nd person', '3rd person', 'Word gender']
 
 # All things
-settings = [language, hours, minutes, seconds, category, difficulty, strictTags, tag1, tag2, tag3, tag4, tag5, tag6]
+settings = [language, taughtLanguage, hours, minutes, seconds, category, difficulty, strictTags, tag1, tag2, tag3, tag4,
+            tag5, tag6]
 
 english_polish_dictionary, polish_english_dictionary, allList, basicList, verbList, nounList, adjectiveList = \
     generateDictionariesAndLanLists()
-availableLabels = createAvailableLabelsList(validWordCategoryList, tagsList)
-availableLabels.remove(None)
+availableLabels = createAvailableLabelsList(validWordCategoryList, tagsList, taughtLanguage)
+if None in availableLabels:
+    availableLabels.remove(None)
 
 # Set default values for variables
 readSettingsFromFile()
